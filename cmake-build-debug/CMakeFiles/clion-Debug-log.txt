@@ -1,0 +1,14 @@
+/home/ozzadar/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.174/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/ozzadar/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.174/bin/ninja/linux/x64/ninja -G Ninja -S /home/ozzadar/Documents/ozzland -B /home/ozzadar/Documents/ozzland/cmake-build-debug
+-- Build spdlog: 1.11.0
+-- Build type: Debug
+-- VMA_BUILD_SAMPLE = OFF
+-- VMA_BUILD_SAMPLE_SHADERS = OFF
+-- VMA_STATIC_VULKAN_FUNCTIONS = ON
+-- VMA_DYNAMIC_VULKAN_FUNCTIONS = OFF
+-- VMA_DEBUG_ALWAYS_DEDICATED_MEMORY = OFF
+-- VMA_DEBUG_INITIALIZE_ALLOCATIONS = OFF
+-- VMA_DEBUG_GLOBAL_MUTEX = OFF
+-- VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT = OFF
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/ozzadar/Documents/ozzland/cmake-build-debug

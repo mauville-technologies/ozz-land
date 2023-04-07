@@ -1,0 +1,21 @@
+# ninja log v5
+1970	2773	1680887006101278299	external/spdlog/CMakeFiles/spdlog.dir/src/cfg.cpp.o	ea35c17315b8c23b
+1	1100	1680887004405303980	external/spdlog/CMakeFiles/spdlog.dir/src/async.cpp.o	f35f1fc477fa35a
+1100	2299	1680887005625285507	external/spdlog/CMakeFiles/spdlog.dir/src/color_sinks.cpp.o	b309d51f9fed9718
+6098	6119	1680887009445227665	ozz_vulkan/libOZZ_VULKAN.a	7a19a15614430503
+3881	3895	1680887007221261340	external/vma/src/libVulkanMemoryAllocatord.a	2eea97958cc9d9a7
+3896	6098	1680887009421228029	ozz_vulkan/CMakeFiles/OZZ_VULKAN.dir/src/renderer.cpp.o	1347f866b609249a
+6119	6438	1680887009761222880	app/OZZ_LAND	414848233cb8ce4b
+2299	3996	1680887007321259826	external/spdlog/CMakeFiles/spdlog.dir/src/bundled_fmtlib_format.cpp.o	79cf127079db3789
+221	255	1680791885580000000	OZZ_LAND	d724632144829eb9
+1144	1970	1680887005297290474	external/spdlog/CMakeFiles/spdlog.dir/src/file_sinks.cpp.o	e3a6fcb8fcce3a71
+0	93	1680887051996583352	build.ninja	cec31565f59d2318
+2	1144	1680887004469303011	external/spdlog/CMakeFiles/spdlog.dir/src/stdout_sinks.cpp.o	eaff6f347bff30cd
+2773	3880	1680887007205261583	external/vma/src/CMakeFiles/VulkanMemoryAllocator.dir/VmaUsage.cpp.o	d6555741665d8850
+3997	5085	1680887008409243352	app/CMakeFiles/OZZ_LAND.dir/src/main.cpp.o	3f1310ba5a629e67
+5665	5842	1680887009161231965	external/spdlog/libspdlogd.a	8beb87057fb4bf18
+0	9	0	clean	6a65dd0faf969201
+1	5665	1680887008981234691	external/spdlog/CMakeFiles/spdlog.dir/src/spdlog.cpp.o	2ebfb70c2d8db8e
+1	2178	1680887060616452828	ozz_vulkan/CMakeFiles/OZZ_VULKAN.dir/src/renderer.cpp.o	9e7ae441b985cb1e
+2178	2200	1680887060640452464	ozz_vulkan/libOZZ_VULKAN.a	7a19a15614430503
+2200	2519	1680887060956447680	app/OZZ_LAND	414848233cb8ce4b
