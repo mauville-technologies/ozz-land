@@ -1,0 +1,4 @@
+cmake-build*/t
+build/
+.idea/
+dist/
