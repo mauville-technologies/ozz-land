@@ -4,6 +4,9 @@ project(OZZ_LAND VERSION 0.1)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.23)
 
+#enable C++20
+set(CMAKE_CXX_STANDARD 20)
+
 find_package(Vulkan 1.3.243 REQUIRED)
 
 # Libraries

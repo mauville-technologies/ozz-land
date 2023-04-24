@@ -49,13 +49,13 @@
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 9,
+				"line" : 8,
 				"parent" : 0
 			},
 			{
 				"command" : 3,
 				"file" : 0,
-				"line" : 23,
+				"line" : 24,
 				"parent" : 0
 			}
 		]
@@ -77,6 +77,34 @@
 				{
 					"backtrace" : 2,
 					"define" : "SPDLOG_COMPILED_LIB"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VMA_DEBUG_ALWAYS_DEDICATED_MEMORY=0"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT=0"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VMA_DEBUG_GLOBAL_MUTEX=0"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VMA_DEBUG_INITIALIZE_ALLOCATIONS=0"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VMA_DYNAMIC_VULKAN_FUNCTIONS=0"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VMA_RECORDING_ENABLED=0"
+				},
+				{
+					"backtrace" : 2,
+					"define" : "VMA_STATIC_VULKAN_FUNCTIONS=1"
 				}
 			],
 			"includes" : 
@@ -88,6 +116,10 @@
 				{
 					"backtrace" : 5,
 					"path" : "/home/ozzadar/Documents/vulkan/ozzland/app/SYSTEM"
+				},
+				{
+					"backtrace" : 5,
+					"path" : "/home/ozzadar/Documents/vulkan/ozzland/app/VulkanMemoryAllocator"
 				},
 				{
 					"backtrace" : 5,
@@ -115,6 +147,11 @@
 					"backtrace" : 2,
 					"isSystem" : true,
 					"path" : "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/openxr/include"
+				},
+				{
+					"backtrace" : 2,
+					"isSystem" : true,
+					"path" : "/home/ozzadar/Documents/vulkan/ozzland/external/vma/include"
 				}
 			],
 			"language" : "CXX",
@@ -184,7 +221,7 @@
 				"role" : "libraries"
 			},
 			{
-				"backtrace" : 4,
+				"backtrace" : 2,
 				"fragment" : "external/vma/src/libVulkanMemoryAllocatord.a",
 				"role" : "libraries"
 			},

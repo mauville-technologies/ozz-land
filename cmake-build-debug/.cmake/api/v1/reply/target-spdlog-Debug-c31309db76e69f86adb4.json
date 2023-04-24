@@ -53,7 +53,7 @@
 					"fragment" : "-g -fdiagnostics-color=always"
 				},
 				{
-					"fragment" : "-std=c++11"
+					"fragment" : "-std=c++20"
 				}
 			],
 			"defines" : 
@@ -77,7 +77,7 @@
 				[
 					1
 				],
-				"standard" : "11"
+				"standard" : "20"
 			},
 			"sourceIndexes" : 
 			[

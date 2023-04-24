@@ -192,7 +192,7 @@ build cmake_object_order_depends_target_spdlog: phony || external/spdlog/CMakeFi
 build external/spdlog/CMakeFiles/spdlog.dir/src/spdlog.cpp.o: CXX_COMPILER__spdlog_Debug /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/src/spdlog.cpp || cmake_object_order_depends_target_spdlog
   DEFINES = -DSPDLOG_COMPILED_LIB
   DEP_FILE = external/spdlog/CMakeFiles/spdlog.dir/src/spdlog.cpp.o.d
-  FLAGS = -g -fdiagnostics-color=always -std=c++11
+  FLAGS = -g -fdiagnostics-color=always -std=c++20
   INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include
   OBJECT_DIR = external/spdlog/CMakeFiles/spdlog.dir
   OBJECT_FILE_DIR = external/spdlog/CMakeFiles/spdlog.dir/src
@@ -200,7 +200,7 @@ build external/spdlog/CMakeFiles/spdlog.dir/src/spdlog.cpp.o: CXX_COMPILER__spdl
 build external/spdlog/CMakeFiles/spdlog.dir/src/stdout_sinks.cpp.o: CXX_COMPILER__spdlog_Debug /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/src/stdout_sinks.cpp || cmake_object_order_depends_target_spdlog
   DEFINES = -DSPDLOG_COMPILED_LIB
   DEP_FILE = external/spdlog/CMakeFiles/spdlog.dir/src/stdout_sinks.cpp.o.d
-  FLAGS = -g -fdiagnostics-color=always -std=c++11
+  FLAGS = -g -fdiagnostics-color=always -std=c++20
   INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include
   OBJECT_DIR = external/spdlog/CMakeFiles/spdlog.dir
   OBJECT_FILE_DIR = external/spdlog/CMakeFiles/spdlog.dir/src
@@ -208,7 +208,7 @@ build external/spdlog/CMakeFiles/spdlog.dir/src/stdout_sinks.cpp.o: CXX_COMPILER
 build external/spdlog/CMakeFiles/spdlog.dir/src/color_sinks.cpp.o: CXX_COMPILER__spdlog_Debug /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/src/color_sinks.cpp || cmake_object_order_depends_target_spdlog
   DEFINES = -DSPDLOG_COMPILED_LIB
   DEP_FILE = external/spdlog/CMakeFiles/spdlog.dir/src/color_sinks.cpp.o.d
-  FLAGS = -g -fdiagnostics-color=always -std=c++11
+  FLAGS = -g -fdiagnostics-color=always -std=c++20
   INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include
   OBJECT_DIR = external/spdlog/CMakeFiles/spdlog.dir
   OBJECT_FILE_DIR = external/spdlog/CMakeFiles/spdlog.dir/src
@@ -216,7 +216,7 @@ build external/spdlog/CMakeFiles/spdlog.dir/src/color_sinks.cpp.o: CXX_COMPILER_
 build external/spdlog/CMakeFiles/spdlog.dir/src/file_sinks.cpp.o: CXX_COMPILER__spdlog_Debug /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/src/file_sinks.cpp || cmake_object_order_depends_target_spdlog
   DEFINES = -DSPDLOG_COMPILED_LIB
   DEP_FILE = external/spdlog/CMakeFiles/spdlog.dir/src/file_sinks.cpp.o.d
-  FLAGS = -g -fdiagnostics-color=always -std=c++11
+  FLAGS = -g -fdiagnostics-color=always -std=c++20
   INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include
   OBJECT_DIR = external/spdlog/CMakeFiles/spdlog.dir
   OBJECT_FILE_DIR = external/spdlog/CMakeFiles/spdlog.dir/src
@@ -224,7 +224,7 @@ build external/spdlog/CMakeFiles/spdlog.dir/src/file_sinks.cpp.o: CXX_COMPILER__
 build external/spdlog/CMakeFiles/spdlog.dir/src/async.cpp.o: CXX_COMPILER__spdlog_Debug /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/src/async.cpp || cmake_object_order_depends_target_spdlog
   DEFINES = -DSPDLOG_COMPILED_LIB
   DEP_FILE = external/spdlog/CMakeFiles/spdlog.dir/src/async.cpp.o.d
-  FLAGS = -g -fdiagnostics-color=always -std=c++11
+  FLAGS = -g -fdiagnostics-color=always -std=c++20
   INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include
   OBJECT_DIR = external/spdlog/CMakeFiles/spdlog.dir
   OBJECT_FILE_DIR = external/spdlog/CMakeFiles/spdlog.dir/src
@@ -232,7 +232,7 @@ build external/spdlog/CMakeFiles/spdlog.dir/src/async.cpp.o: CXX_COMPILER__spdlo
 build external/spdlog/CMakeFiles/spdlog.dir/src/cfg.cpp.o: CXX_COMPILER__spdlog_Debug /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/src/cfg.cpp || cmake_object_order_depends_target_spdlog
   DEFINES = -DSPDLOG_COMPILED_LIB
   DEP_FILE = external/spdlog/CMakeFiles/spdlog.dir/src/cfg.cpp.o.d
-  FLAGS = -g -fdiagnostics-color=always -std=c++11
+  FLAGS = -g -fdiagnostics-color=always -std=c++20
   INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include
   OBJECT_DIR = external/spdlog/CMakeFiles/spdlog.dir
   OBJECT_FILE_DIR = external/spdlog/CMakeFiles/spdlog.dir/src
@@ -240,7 +240,7 @@ build external/spdlog/CMakeFiles/spdlog.dir/src/cfg.cpp.o: CXX_COMPILER__spdlog_
 build external/spdlog/CMakeFiles/spdlog.dir/src/bundled_fmtlib_format.cpp.o: CXX_COMPILER__spdlog_Debug /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/src/bundled_fmtlib_format.cpp || cmake_object_order_depends_target_spdlog
   DEFINES = -DSPDLOG_COMPILED_LIB
   DEP_FILE = external/spdlog/CMakeFiles/spdlog.dir/src/bundled_fmtlib_format.cpp.o.d
-  FLAGS = -g -fdiagnostics-color=always -std=c++11
+  FLAGS = -g -fdiagnostics-color=always -std=c++20
   INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include
   OBJECT_DIR = external/spdlog/CMakeFiles/spdlog.dir
   OBJECT_FILE_DIR = external/spdlog/CMakeFiles/spdlog.dir/src
@@ -1137,10 +1137,10 @@ build ozz_vulkan/install/strip: phony ozz_vulkan/CMakeFiles/install/strip.util
 build cmake_object_order_depends_target_OZZ_LAND: phony || cmake_object_order_depends_target_OZZ_VULKAN cmake_object_order_depends_target_VulkanMemoryAllocator cmake_object_order_depends_target_openxr_loader cmake_object_order_depends_target_spdlog
 
 build app/CMakeFiles/OZZ_LAND.dir/src/main.cpp.o: CXX_COMPILER__OZZ_LAND_Debug /home/ozzadar/Documents/vulkan/ozzland/app/src/main.cpp || cmake_object_order_depends_target_OZZ_LAND
-  DEFINES = -DSPDLOG_COMPILED_LIB
+  DEFINES = -DSPDLOG_COMPILED_LIB -DVMA_DEBUG_ALWAYS_DEDICATED_MEMORY=0 -DVMA_DEBUG_DONT_EXCEED_MAX_MEMORY_ALLOCATION_COUNT=0 -DVMA_DEBUG_GLOBAL_MUTEX=0 -DVMA_DEBUG_INITIALIZE_ALLOCATIONS=0 -DVMA_DYNAMIC_VULKAN_FUNCTIONS=0 -DVMA_RECORDING_ENABLED=0 -DVMA_STATIC_VULKAN_FUNCTIONS=1
   DEP_FILE = app/CMakeFiles/OZZ_LAND.dir/src/main.cpp.o.d
   FLAGS = -g -fdiagnostics-color=always -std=c++20
-  INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/app/OZZ_VULKAN -I/home/ozzadar/Documents/vulkan/ozzland/app/SYSTEM -I/home/ozzadar/Documents/vulkan/ozzland/app/spdlog -I/home/ozzadar/Documents/vulkan/ozzland/app/openxr_loader -I/home/ozzadar/Documents/vulkan/ozzland/ozz_vulkan/include -isystem /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include -isystem /home/ozzadar/Documents/vulkan/ozzland/external/openxr/include -isystem /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/openxr/include
+  INCLUDES = -I/home/ozzadar/Documents/vulkan/ozzland/app/OZZ_VULKAN -I/home/ozzadar/Documents/vulkan/ozzland/app/SYSTEM -I/home/ozzadar/Documents/vulkan/ozzland/app/VulkanMemoryAllocator -I/home/ozzadar/Documents/vulkan/ozzland/app/spdlog -I/home/ozzadar/Documents/vulkan/ozzland/app/openxr_loader -I/home/ozzadar/Documents/vulkan/ozzland/ozz_vulkan/include -isystem /home/ozzadar/Documents/vulkan/ozzland/external/spdlog/include -isystem /home/ozzadar/Documents/vulkan/ozzland/external/openxr/include -isystem /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/openxr/include -isystem /home/ozzadar/Documents/vulkan/ozzland/external/vma/include
   OBJECT_DIR = app/CMakeFiles/OZZ_LAND.dir
   OBJECT_FILE_DIR = app/CMakeFiles/OZZ_LAND.dir/src
 
