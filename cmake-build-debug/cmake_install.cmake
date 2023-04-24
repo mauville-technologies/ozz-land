@@ -1,4 +1,4 @@
-# Install script for directory: /home/ozzadar/Documents/ozzland
+# Install script for directory: /home/ozzadar/Documents/vulkan/ozzland
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -29,7 +29,7 @@ endif()
 
 # Install shared libraries without execute permission?
 if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
-  set(CMAKE_INSTALL_SO_NO_EXE "1")
+  set(CMAKE_INSTALL_SO_NO_EXE "0")
 endif()
 
 # Is this installation the result of a crosscompile?
@@ -44,17 +44,17 @@ endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/ozzadar/Documents/ozzland/cmake-build-debug/external/cmake_install.cmake")
+  include("/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/ozzadar/Documents/ozzland/cmake-build-debug/ozz_vulkan/cmake_install.cmake")
+  include("/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/ozz_vulkan/cmake_install.cmake")
 endif()
 
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for the subdirectory.
-  include("/home/ozzadar/Documents/ozzland/cmake-build-debug/app/cmake_install.cmake")
+  include("/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/app/cmake_install.cmake")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT)
@@ -65,5 +65,5 @@ endif()
 
 string(REPLACE ";" "\n" CMAKE_INSTALL_MANIFEST_CONTENT
        "${CMAKE_INSTALL_MANIFEST_FILES}")
-file(WRITE "/home/ozzadar/Documents/ozzland/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
+file(WRITE "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/${CMAKE_INSTALL_MANIFEST}"
      "${CMAKE_INSTALL_MANIFEST_CONTENT}")

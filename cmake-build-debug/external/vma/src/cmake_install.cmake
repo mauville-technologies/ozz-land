@@ -1,4 +1,4 @@
-# Install script for directory: /home/ozzadar/Documents/ozzland/external/vma/src
+# Install script for directory: /home/ozzadar/Documents/vulkan/ozzland/external/vma/src
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -29,7 +29,7 @@ endif()
 
 # Install shared libraries without execute permission?
 if(NOT DEFINED CMAKE_INSTALL_SO_NO_EXE)
-  set(CMAKE_INSTALL_SO_NO_EXE "1")
+  set(CMAKE_INSTALL_SO_NO_EXE "0")
 endif()
 
 # Is this installation the result of a crosscompile?
@@ -43,18 +43,18 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/ozzadar/Documents/ozzland/cmake-build-debug/external/vma/src/libVulkanMemoryAllocatord.a")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE STATIC_LIBRARY FILES "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/vma/src/libVulkanMemoryAllocatord.a")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/home/ozzadar/Documents/ozzland/external/vma/include/vk_mem_alloc.h")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/include" TYPE FILE FILES "/home/ozzadar/Documents/vulkan/ozzland/external/vma/include/vk_mem_alloc.h")
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator/VulkanMemoryAllocatorTargets.cmake")
     file(DIFFERENT _cmake_export_file_changed FILES
          "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator/VulkanMemoryAllocatorTargets.cmake"
-         "/home/ozzadar/Documents/ozzland/cmake-build-debug/external/vma/src/CMakeFiles/Export/8e7cf9f2e7972646821d320422b254a4/VulkanMemoryAllocatorTargets.cmake")
+         "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/vma/src/CMakeFiles/Export/8e7cf9f2e7972646821d320422b254a4/VulkanMemoryAllocatorTargets.cmake")
     if(_cmake_export_file_changed)
       file(GLOB _cmake_old_config_files "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator/VulkanMemoryAllocatorTargets-*.cmake")
       if(_cmake_old_config_files)
@@ -67,13 +67,13 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT
     endif()
     unset(_cmake_export_file_changed)
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator" TYPE FILE FILES "/home/ozzadar/Documents/ozzland/cmake-build-debug/external/vma/src/CMakeFiles/Export/8e7cf9f2e7972646821d320422b254a4/VulkanMemoryAllocatorTargets.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator" TYPE FILE FILES "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/vma/src/CMakeFiles/Export/8e7cf9f2e7972646821d320422b254a4/VulkanMemoryAllocatorTargets.cmake")
   if(CMAKE_INSTALL_CONFIG_NAME MATCHES "^([Dd][Ee][Bb][Uu][Gg])$")
-    file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator" TYPE FILE FILES "/home/ozzadar/Documents/ozzland/cmake-build-debug/external/vma/src/CMakeFiles/Export/8e7cf9f2e7972646821d320422b254a4/VulkanMemoryAllocatorTargets-debug.cmake")
+    file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator" TYPE FILE FILES "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/vma/src/CMakeFiles/Export/8e7cf9f2e7972646821d320422b254a4/VulkanMemoryAllocatorTargets-debug.cmake")
   endif()
 endif()
 
 if(CMAKE_INSTALL_COMPONENT STREQUAL "Unspecified" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator" TYPE FILE FILES "/home/ozzadar/Documents/ozzland/cmake-build-debug/external/vma/src/VulkanMemoryAllocatorConfig.cmake")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/cmake/VulkanMemoryAllocator" TYPE FILE FILES "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/external/vma/src/VulkanMemoryAllocatorConfig.cmake")
 endif()
 

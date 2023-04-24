@@ -1,0 +1,48 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"INSTALL"
+		],
+		"files" : 
+		[
+			"external/openxr/include/openxr/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 102,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Headers",
+			"destination" : "include/openxr",
+			"paths" : 
+			[
+				"external/openxr/include/openxr/openxr_platform_defines.h",
+				"external/openxr/include/openxr/openxr.h",
+				"external/openxr/include/openxr/openxr_platform.h",
+				"external/openxr/include/openxr/openxr_reflection.h",
+				"external/openxr/include/openxr/openxr_reflection_structs.h",
+				"external/openxr/include/openxr/openxr_reflection_parent_structs.h"
+			],
+			"type" : "file"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "external/openxr/include/openxr",
+		"source" : "external/openxr/include/openxr"
+	}
+}

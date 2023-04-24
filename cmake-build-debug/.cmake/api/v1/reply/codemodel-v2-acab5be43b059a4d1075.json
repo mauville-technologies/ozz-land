@@ -1,0 +1,370 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						10,
+						11
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Debug-f5ebdc15457944623624.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.23"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "external",
+					"childIndexes" : 
+					[
+						2,
+						3,
+						5
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external-Debug-8482bb5b6989bf536f1d.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.23"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "external"
+				},
+				{
+					"build" : "external/spdlog",
+					"jsonFile" : "directory-external.spdlog-Debug-35f4a856ea892a098f37.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 1,
+					"source" : "external/spdlog",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "external/vma",
+					"childIndexes" : 
+					[
+						4
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.vma-Debug-ba89163564dd79d89cd5.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.9"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 2,
+					"source" : "external/vma"
+				},
+				{
+					"build" : "external/vma/src",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.vma.src-Debug-0540edfc331507b4a2a0.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.9"
+					},
+					"parentIndex" : 3,
+					"projectIndex" : 2,
+					"source" : "external/vma/src",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "external/openxr",
+					"childIndexes" : 
+					[
+						6,
+						8
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.openxr-Debug-a4082c272e1a37ff7eda.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 3,
+					"source" : "external/openxr",
+					"targetIndexes" : 
+					[
+						7
+					]
+				},
+				{
+					"build" : "external/openxr/include",
+					"childIndexes" : 
+					[
+						7
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.openxr.include-Debug-7b83be1a8dfc43490703.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 5,
+					"projectIndex" : 3,
+					"source" : "external/openxr/include"
+				},
+				{
+					"build" : "external/openxr/include/openxr",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.openxr.include.openxr-Debug-db485a5e0b204be2e97d.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 6,
+					"projectIndex" : 3,
+					"source" : "external/openxr/include/openxr",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "external/openxr/src",
+					"childIndexes" : 
+					[
+						9
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.openxr.src-Debug-117d28133d5e4390fc80.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 5,
+					"projectIndex" : 3,
+					"source" : "external/openxr/src",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "external/openxr/src/loader",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-external.openxr.src.loader-Debug-22a7c3dd9bc93d5fa5f5.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.0"
+					},
+					"parentIndex" : 8,
+					"projectIndex" : 3,
+					"source" : "external/openxr/src/loader",
+					"targetIndexes" : 
+					[
+						4,
+						5
+					]
+				},
+				{
+					"build" : "ozz_vulkan",
+					"jsonFile" : "directory-ozz_vulkan-Debug-f99c3d7de9d548fb29c1.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.23"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 4,
+					"source" : "ozz_vulkan",
+					"targetIndexes" : 
+					[
+						1
+					]
+				},
+				{
+					"build" : "app",
+					"jsonFile" : "directory-app-Debug-94c5f210ca04b1028ae5.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.23"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "app",
+					"targetIndexes" : 
+					[
+						0
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3,
+						4
+					],
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						11
+					],
+					"name" : "OZZ_LAND",
+					"targetIndexes" : 
+					[
+						0
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						2
+					],
+					"name" : "spdlog",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						3,
+						4
+					],
+					"name" : "VulkanMemoryAllocator",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						5,
+						6,
+						7,
+						8,
+						9
+					],
+					"name" : "OPENXR",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						3,
+						4,
+						5,
+						7,
+						8
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						10
+					],
+					"name" : "OZZ_VULKAN",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						1
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 11,
+					"id" : "OZZ_LAND::@5f5a17c01335469806cb",
+					"jsonFile" : "target-OZZ_LAND-Debug-5d5b463affa16be2e3ed.json",
+					"name" : "OZZ_LAND",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 10,
+					"id" : "OZZ_VULKAN::@62aa855f94d8229932a2",
+					"jsonFile" : "target-OZZ_VULKAN-Debug-fdf436b6c39133e3d7b6.json",
+					"name" : "OZZ_VULKAN",
+					"projectIndex" : 4
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "VulkanMemoryAllocator::@ca932ad22992ae5baa2b",
+					"jsonFile" : "target-VulkanMemoryAllocator-Debug-de462b7b89c3d7f685c8.json",
+					"name" : "VulkanMemoryAllocator",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "generate_openxr_header::@fcad80d9ba6e5719b58e",
+					"jsonFile" : "target-generate_openxr_header-Debug-0b123c7d75af08cbcafe.json",
+					"name" : "generate_openxr_header",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "libopenxr_loader.so.1.0::@d38b5ee4281afa849c8a",
+					"jsonFile" : "target-libopenxr_loader.so.1.0-Debug-c67d853bc0596c54af68.json",
+					"name" : "libopenxr_loader.so.1.0",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "openxr_loader::@d38b5ee4281afa849c8a",
+					"jsonFile" : "target-openxr_loader-Debug-c168a1f25cc36a8ad116.json",
+					"name" : "openxr_loader",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 2,
+					"id" : "spdlog::@e2ce52242414c9d53ee8",
+					"jsonFile" : "target-spdlog-Debug-cf86cffe8ec987dcd60c.json",
+					"name" : "spdlog",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "uninstall::@5c4bdc1911fa69df95f1",
+					"jsonFile" : "target-uninstall-Debug-1e87fb38ab1c6dc0771a.json",
+					"name" : "uninstall",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 8,
+					"id" : "xr_global_generated_files::@809c963fe9a956c83371",
+					"jsonFile" : "target-xr_global_generated_files-Debug-477dc408380e32872d0e.json",
+					"name" : "xr_global_generated_files",
+					"projectIndex" : 3
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug",
+		"source" : "/home/ozzadar/Documents/vulkan/ozzland"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 4
+	}
+}

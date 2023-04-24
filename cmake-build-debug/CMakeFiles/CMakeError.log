@@ -1,0 +1,103 @@
+Performing C++ SOURCE FILE Test HAVE_FILESYSTEM_WITHOUT_LIB failed with the following output:
+Change Dir: /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-SEwFRC
+
+Run Build Command(s):/home/ozzadar/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.222/bin/ninja/linux/x64/ninja cmTC_98d23 && [1/2] Building CXX object CMakeFiles/cmTC_98d23.dir/src.cxx.o
+[2/2] Linking CXX executable cmTC_98d23
+FAILED: cmTC_98d23 
+: && /usr/bin/c++ -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=TRUE  CMakeFiles/cmTC_98d23.dir/src.cxx.o -o cmTC_98d23   && :
+/usr/bin/ld: CMakeFiles/cmTC_98d23.dir/src.cxx.o: in function `std::experimental::filesystem::v1::is_regular_file(std::experimental::filesystem::v1::__cxx11::path const&)':
+src.cxx:(.text._ZNSt12experimental10filesystem2v115is_regular_fileERKNS1_7__cxx114pathE[_ZNSt12experimental10filesystem2v115is_regular_fileERKNS1_7__cxx114pathE]+0x14): undefined reference to `std::experimental::filesystem::v1::status(std::experimental::filesystem::v1::__cxx11::path const&)'
+/usr/bin/ld: CMakeFiles/cmTC_98d23.dir/src.cxx.o: in function `std::experimental::filesystem::v1::__cxx11::path::path<char [2], std::experimental::filesystem::v1::__cxx11::path>(char const (&) [2])':
+src.cxx:(.text._ZNSt12experimental10filesystem2v17__cxx114pathC2IA2_cS3_EERKT_[_ZNSt12experimental10filesystem2v17__cxx114pathC5IA2_cS3_EERKT_]+0x6a): undefined reference to `std::experimental::filesystem::v1::__cxx11::path::_M_split_cmpts()'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Source file was:
+#include <stdfs_conditions.h>
+    
+    #if defined(USE_FINAL_FS) && USE_FINAL_FS
+    #include <filesystem>
+    using namespace std::filesystem;
+    #endif
+    #if defined(USE_EXPERIMENTAL_FS) && USE_EXPERIMENTAL_FS
+    #include <experimental/filesystem>
+    using namespace std::experimental::filesystem;
+    #endif
+    int main() {
+        (void)is_regular_file("/");
+        return 0;
+    }
+    
+    
+
+Performing C++ SOURCE FILE Test HAVE_FILESYSTEM_NEEDING_LIBCXXFS failed with the following output:
+Change Dir: /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-16qKVH
+
+Run Build Command(s):/home/ozzadar/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.222/bin/ninja/linux/x64/ninja cmTC_c032e && [1/2] Building CXX object CMakeFiles/cmTC_c032e.dir/src.cxx.o
+[2/2] Linking CXX executable cmTC_c032e
+FAILED: cmTC_c032e 
+: && /usr/bin/c++ -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=TRUE  CMakeFiles/cmTC_c032e.dir/src.cxx.o -o cmTC_c032e  -lc++fs && :
+/usr/bin/ld: cannot find -lc++fs: No such file or directory
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+Source file was:
+#include <stdfs_conditions.h>
+    
+    #if defined(USE_FINAL_FS) && USE_FINAL_FS
+    #include <filesystem>
+    using namespace std::filesystem;
+    #endif
+    #if defined(USE_EXPERIMENTAL_FS) && USE_EXPERIMENTAL_FS
+    #include <experimental/filesystem>
+    using namespace std::experimental::filesystem;
+    #endif
+    int main() {
+        (void)is_regular_file("/");
+        return 0;
+    }
+    
+    
+
+Determining if the function __secure_getenv exists failed with the following output:
+Change Dir: /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-sKwMRd
+
+Run Build Command(s):/home/ozzadar/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.222/bin/ninja/linux/x64/ninja cmTC_0f359 && [1/2] Building C object CMakeFiles/cmTC_0f359.dir/CheckFunctionExists.c.o
+[2/2] Linking C executable cmTC_0f359
+FAILED: cmTC_0f359 
+: && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=__secure_getenv -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=TRUE -rdynamic CMakeFiles/cmTC_0f359.dir/CheckFunctionExists.c.o -o cmTC_0f359   && :
+/usr/bin/ld: CMakeFiles/cmTC_0f359.dir/CheckFunctionExists.c.o: in function `main':
+CheckFunctionExists.c:(.text+0x10): undefined reference to `__secure_getenv'
+collect2: error: ld returned 1 exit status
+ninja: build stopped: subcommand failed.
+
+
+
+Performing C++ SOURCE FILE Test SUPPORTS_Werrorunusedargument failed with the following output:
+Change Dir: /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZdUOll
+
+Run Build Command(s):/home/ozzadar/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.222/bin/ninja/linux/x64/ninja cmTC_1c6b6 && [1/2] Building CXX object CMakeFiles/cmTC_1c6b6.dir/src.cxx.o
+FAILED: CMakeFiles/cmTC_1c6b6.dir/src.cxx.o 
+/usr/bin/c++ -DSUPPORTS_Werrorunusedargument  -Wall -Werror=unused-parameter -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=TRUE -fPIE -fdiagnostics-color=always   -Werror=unused-argument -std=gnu++14 -o CMakeFiles/cmTC_1c6b6.dir/src.cxx.o -c /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ZdUOll/src.cxx
+cc1plus: error: '-Werror=unused-argument': no option '-Wunused-argument'; did you mean '-Wunused-dummy-argument'?
+ninja: build stopped: subcommand failed.
+
+
+Source file was:
+int main() { return 0; }
+
+Performing C SOURCE FILE Test SUPPORTS_C_Werrorunusedargument failed with the following output:
+Change Dir: /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-alioxR
+
+Run Build Command(s):/home/ozzadar/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/231.8109.222/bin/ninja/linux/x64/ninja cmTC_b5dd2 && [1/2] Building C object CMakeFiles/cmTC_b5dd2.dir/src.c.o
+FAILED: CMakeFiles/cmTC_b5dd2.dir/src.c.o 
+/usr/bin/cc -DSUPPORTS_C_Werrorunusedargument  -Wall -Werror=unused-parameter -DCMAKE_CXX_STANDARD=17 -DCMAKE_CXX_STANDARD_REQUIRED=TRUE -fPIE -fdiagnostics-color=always   -Werror=unused-argument -o CMakeFiles/cmTC_b5dd2.dir/src.c.o -c /home/ozzadar/Documents/vulkan/ozzland/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-alioxR/src.c
+cc1: error: '-Werror=unused-argument': no option '-Wunused-argument'; did you mean '-Wunused-dummy-argument'?
+ninja: build stopped: subcommand failed.
+
+
+Source file was:
+int main(void) { return 0; }
+
