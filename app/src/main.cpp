@@ -14,6 +14,14 @@
 #include <openxr/openxr_platform.h>
 #include <vk_mem_alloc.h>
 
+struct Swapchain {
+    XrSwapchain handle{XR_NULL_HANDLE};
+    int32_t width{0};
+    int32_t height{0};
+    std::vector<XrSwapchainImageVulkan2KHR> images;
+
+};
+
 // Goals:
 // Initialize OpenXR, and clear color the HMD using Vulkan
 
@@ -31,6 +39,25 @@ XrInstance xrInstance{XR_NULL_HANDLE};
 XrSystemId xrSystemId{XR_NULL_SYSTEM_ID};
 XrSession xrSession {XR_NULL_HANDLE};
 XrSpace xrApplicationSpace {XR_NULL_HANDLE};
+std::vector<XrViewConfigurationView> viewConfigurationViews;
+std::vector<XrView> views;
+int64_t swapchainColorFormat{-1};
+std::vector<Swapchain> swapchains;
+
+int64_t SelectColorSwapchainFormat(const std::vector<int64_t>& runtimeFormats) {
+    // List of supported color swapchain formats.
+    constexpr int64_t SupportedColorSwapchainFormats[] = {VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_R8G8B8A8_SRGB,
+                                                      VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM};
+
+    auto swapchainFormatIt =
+        std::find_first_of(runtimeFormats.begin(), runtimeFormats.end(), std::begin(SupportedColorSwapchainFormats),
+                           std::end(SupportedColorSwapchainFormats));
+    if (swapchainFormatIt == runtimeFormats.end()) {
+        spdlog::error("No runtime swapchain format supported for color swapchain");
+    }
+
+    return *swapchainFormatIt;
+}
 
 // Vulkan Functions
 VkResult vkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *createInfo,
@@ -90,6 +117,53 @@ XrResult xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreate
 void shutdown() {
 
     spdlog::info("Shutting down application.");
+
+    // Destroy OpenXR Swapchains
+    for (auto& swapchain : swapchains) {
+        xrDestroySwapchain(swapchain.handle);
+        swapchain.handle = XR_NULL_HANDLE;
+        spdlog::trace("Destroyed OpenXR Swapchain.");
+    }
+
+    swapchains.clear();
+
+    // Clear OpenXR System Id
+    xrSystemId = XR_NULL_SYSTEM_ID;
+
+    // Destroy OpenXR Application Space if exists
+    if (xrApplicationSpace != XR_NULL_HANDLE) {
+        xrDestroySpace(xrApplicationSpace);
+        xrApplicationSpace = XR_NULL_HANDLE;
+        spdlog::trace("Destroyed OpenXR Application Space.");
+    }
+
+    // Destroy OpenXR Session if exists
+    if (xrSession != XR_NULL_HANDLE) {
+        xrDestroySession(xrSession);
+        xrSession = XR_NULL_HANDLE;
+        spdlog::trace("Destroyed OpenXR Session.");
+    }
+
+    // Destroy vma allocator if exists
+    if (vmaAllocator != VK_NULL_HANDLE) {
+        vmaDestroyAllocator(vmaAllocator);
+        vmaAllocator = VK_NULL_HANDLE;
+        spdlog::trace("Destroyed VMA Allocator.");
+    }
+
+    // Destroy Vulkan Device if exists
+    if (vkDevice != VK_NULL_HANDLE) {
+        vkDestroyDevice(vkDevice, nullptr);
+        vkDevice = VK_NULL_HANDLE;
+        spdlog::trace("Destroyed Vulkan Device.");
+    }
+
+    // destroy debug messenger if exists
+    if (vkDebugMessenger != VK_NULL_HANDLE) {
+        spdlog::trace("Destroying Vulkan Debug Messenger.");
+        vkDestroyDebugUtilsMessengerEXT(vkInstance, vkDebugMessenger, nullptr);
+        vkDebugMessenger = VK_NULL_HANDLE;
+    }
 
     // Destroy Vulkan Instance if exists
     if (vkInstance != VK_NULL_HANDLE) {
@@ -413,7 +487,136 @@ int main(int argc, char *argv[]) {
     }
 
     // TODO: Next step: Create swapchains. Ref: hello_xr main.cpp L331 & openxr_program.cpp L572
+    XrSystemProperties systemProperties{XR_TYPE_SYSTEM_PROPERTIES};
+    result = xrGetSystemProperties(xrInstance, xrSystemId, &systemProperties);
 
+    if (XR_FAILED(result)) {
+        spdlog::error("Failed to get OpenXR System Properties {}", result);
+        return 1;
+    } else {
+        spdlog::trace("Got OpenXR System Properties");
+    }
+
+    // Log system properties
+    spdlog::info("System Properties:");
+    spdlog::info("System ID: {}", systemProperties.systemId);
+    spdlog::info("Vendor ID: {}", systemProperties.vendorId);
+    spdlog::info("Graphics Properties:");
+    spdlog::info("Max Swapchain Image Height: {}", systemProperties.graphicsProperties.maxSwapchainImageHeight);
+    spdlog::info("Max Swapchain Image Width: {}", systemProperties.graphicsProperties.maxSwapchainImageWidth);
+    spdlog::info("Max Layer Count: {}", systemProperties.graphicsProperties.maxLayerCount);
+    spdlog::info("System tracking properties:");
+    spdlog::info("Orientation Tracking: {}", systemProperties.trackingProperties.orientationTracking);
+    spdlog::info("Position Tracking: {}", systemProperties.trackingProperties.positionTracking);
+
+    // Get view configuration views
+    uint32_t viewCount;
+    result = xrEnumerateViewConfigurationViews(xrInstance, xrSystemId, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 0, &viewCount, nullptr);
+
+    if (XR_FAILED(result)) {
+        spdlog::error("Failed to get OpenXR View Configuration count {}", result);
+        return 1;
+    }
+
+    viewConfigurationViews.resize(viewCount, {XR_TYPE_VIEW_CONFIGURATION_VIEW});
+    result = xrEnumerateViewConfigurationViews(xrInstance, xrSystemId, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, viewCount, &viewCount, viewConfigurationViews.data());
+
+    if (XR_FAILED(result)) {
+        spdlog::error("Failed to get OpenXR View Configuration Views {}", result);
+        return 1;
+    } else {
+        spdlog::trace("Got OpenXR View Configuration Views");
+    }
+
+    views.resize(viewCount, {XR_TYPE_VIEW});
+
+    // Create swapchains
+    if (viewCount > 0) {
+        uint32_t swapchainFormatCount;
+        result = xrEnumerateSwapchainFormats(xrSession, 0, &swapchainFormatCount, nullptr);
+
+        if (XR_FAILED(result)) {
+            spdlog::error("Failed to get OpenXR Swapchain Format count {}", result);
+            return 1;
+        }
+        std::vector<int64_t > swapchainFormats(swapchainFormatCount);
+        result = xrEnumerateSwapchainFormats(xrSession, swapchainFormatCount, &swapchainFormatCount, swapchainFormats.data());
+
+        if (XR_FAILED(result)) {
+            spdlog::error("Failed to get OpenXR Swapchain Formats {}", result);
+            return 1;
+        } else {
+            spdlog::trace("Got OpenXR Swapchain Formats");
+        }
+
+        swapchainColorFormat = SelectColorSwapchainFormat(swapchainFormats);
+
+        // Print swapchain formats and selected one
+        spdlog::info("Swapchain Formats:");
+        for (auto format : swapchainFormats) {
+            spdlog::info("{}", format);
+        }
+        spdlog::info("Selected Swapchain Format: {}", swapchainColorFormat);
+
+        // Create a swapchain for each view
+        for (uint32_t i = 0; i < viewCount; i++) {
+            XrSwapchainCreateInfo swapchainCreateInfo{XR_TYPE_SWAPCHAIN_CREATE_INFO};
+            swapchainCreateInfo.arraySize = 1;
+            swapchainCreateInfo.format = swapchainColorFormat;
+            swapchainCreateInfo.width = viewConfigurationViews[i].recommendedImageRectWidth;
+            swapchainCreateInfo.height = viewConfigurationViews[i].recommendedImageRectHeight;
+            swapchainCreateInfo.mipCount = 1;
+            swapchainCreateInfo.faceCount = 1;
+            swapchainCreateInfo.sampleCount = viewConfigurationViews[i].recommendedSwapchainSampleCount;
+            swapchainCreateInfo.usageFlags = XR_SWAPCHAIN_USAGE_SAMPLED_BIT | XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT;
+
+            Swapchain swapchain;
+            swapchain.width = static_cast<int> (swapchainCreateInfo.width);
+            swapchain.height = static_cast<int> (swapchainCreateInfo.height);
+
+            result = xrCreateSwapchain(xrSession, &swapchainCreateInfo, &swapchain.handle);
+
+            if (XR_FAILED(result)) {
+                spdlog::error("Failed to create OpenXR Swapchain {}", result);
+                return 1;
+            } else {
+                spdlog::trace("Created OpenXR Swapchain");
+            }
+
+            swapchains.push_back(swapchain);
+
+            // Get swapchain images
+            uint32_t swapchainImageCount;
+            result = xrEnumerateSwapchainImages(swapchain.handle, 0, &swapchainImageCount, nullptr);
+
+            if (XR_FAILED(result)) {
+                spdlog::error("Failed to get OpenXR Swapchain Image count {}", result);
+                return 1;
+            }
+
+            swapchain.images.resize(swapchainImageCount, {XR_TYPE_SWAPCHAIN_IMAGE_VULKAN2_KHR});
+            result = xrEnumerateSwapchainImages(swapchain.handle,
+                                                swapchainImageCount, &swapchainImageCount, reinterpret_cast<XrSwapchainImageBaseHeader *> (swapchain.images.data()));
+
+            if (XR_FAILED(result)) {
+                spdlog::error("Failed to get OpenXR Swapchain Images {}", result);
+                return 1;
+            } else {
+                spdlog::trace("Got OpenXR Swapchain Images");
+            }
+        }
+
+
+    }
+
+    //wasting time to simulate application loop
+    for (int i = 0; i < 50000; i++) {
+        spdlog::info("Frame {}", i);
+    }
+
+    spdlog::info("Exiting");
     shutdown();
+
+    spdlog::shutdown();
 }
 
