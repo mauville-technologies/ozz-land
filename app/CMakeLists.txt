@@ -1,13 +1,13 @@
 set(SOURCES
         src/main.cpp
-        src/swapchain_image.h src/graphics_includes.h src/utils.h)
+        ../ozz_vulkanxr/include/ozz_vulkan/swapchain_image.h ../ozz_vulkanxr/include/ozz_vulkan/graphics_includes.h ../ozz_vulkanxr/include/ozz_vulkan/utils.h)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
-        OZZ_VULKAN
+        OZZ_VULKANX
     SYSTEM
         spdlog
         openxr_loader
@@ -15,7 +15,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        OZZ_VULKAN
+        OZZ_VULKANXR
         spdlog
         openxr_loader
 )

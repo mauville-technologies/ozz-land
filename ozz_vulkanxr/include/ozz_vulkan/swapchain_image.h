@@ -5,6 +5,7 @@
 #pragma once
 
 #include "graphics_includes.h"
+#include <spdlog/spdlog.h>
 
 struct Swapchain {
     XrSwapchain handle{XR_NULL_HANDLE};

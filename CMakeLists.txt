@@ -16,7 +16,7 @@ set(ASSETS_DIR_NAME "assets")
 add_subdirectory(external)
 
 # Renderer
-add_subdirectory(ozz_vulkan)
+add_subdirectory(ozz_vulkanxr)
 
 # Main Application
 add_subdirectory(app)

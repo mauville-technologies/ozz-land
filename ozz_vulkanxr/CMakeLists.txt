@@ -1,12 +1,13 @@
-project(OZZ_VULKAN)
+project(OZZ_VULKANXR)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.23)
 
 find_package(Vulkan 1.3.243 REQUIRED)
 
 set(SOURCES
-    src/renderer.cpp
-        include/ozz_vulkan/vk_utils.h)
+        include/ozz_vulkan/vk_utils.h
+        src/renderer.cpp
+        src/vma_implementation.cpp)
 
 
 add_library(${PROJECT_NAME} ${SOURCES})
@@ -16,6 +17,8 @@ target_link_libraries(${PROJECT_NAME}
         Vulkan::Vulkan
         spdlog
         VulkanMemoryAllocator
+    PRIVATE
+        openxr_loader
 )
 
 target_include_directories(${PROJECT_NAME}
@@ -24,6 +27,7 @@ target_include_directories(${PROJECT_NAME}
         ${Vulkan_INCLUDE_DIRS}
         VulkanMemoryAllocator
     PRIVATE
+        openxr_loader
     SYSTEM
         spdlog
 )
