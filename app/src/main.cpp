@@ -2,25 +2,24 @@
 // Created by Paul Mauviel on 2023-04-06.
 //
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#define EYE_COUNT 2
 
 #include <spdlog/spdlog.h>
 #include <ozz_vulkan/renderer.h>
 #include <vector>
+#include <memory>
 
-#define XR_USE_GRAPHICS_API_VULKAN
 #define VMA_IMPLEMENTATION
-
-#include <openxr/openxr.h>
-#include <openxr/openxr_platform.h>
+#include "graphics_includes.h"
 #include <vk_mem_alloc.h>
 
-struct Swapchain {
-    XrSwapchain handle{XR_NULL_HANDLE};
-    int32_t width{0};
-    int32_t height{0};
-    std::vector<XrSwapchainImageVulkan2KHR> images;
+#include "swapchain_image.h"
+#include "utils.h"
+#include "ozz_vulkan/vk_utils.h"
 
-};
+
+// Program arguments
+bool isRunning {true};
 
 // Goals:
 // Initialize OpenXR, and clear color the HMD using Vulkan
@@ -32,9 +31,26 @@ VkDevice vkDevice {VK_NULL_HANDLE};
 VkDebugUtilsMessengerEXT vkDebugMessenger{VK_NULL_HANDLE};
 VkQueue vkQueue;
 VmaAllocator vmaAllocator;
+std::vector<XrSwapchainImageVulkan2KHR> swapchainImages[EYE_COUNT];
+std::vector<std::vector<SwapchainImage*>> wrappedSwapchainImages {};
 
+VkRenderPass renderPass;
+VkPipelineLayout pipelineLayout;
+VkPipeline pipeline;
+VkCommandPool commandPool;
+
+/*
+ * Stuff I need to add
+ *
+ * RenderPass
+ * Command Pool
+ * Descriptor Pool
+ * Descriptor Set Layout
+ *
+ */
 uint32_t vkQueueFamilyIndex;
 
+bool xrSessionInitialized{false};
 XrInstance xrInstance{XR_NULL_HANDLE};
 XrSystemId xrSystemId{XR_NULL_SYSTEM_ID};
 XrSession xrSession {XR_NULL_HANDLE};
@@ -113,6 +129,10 @@ XrResult xrCreateVulkanDeviceKHR(XrInstance instance, const XrVulkanDeviceCreate
                           reinterpret_cast<PFN_xrVoidFunction *>(&pfnXrCreateVulkanDeviceKHR));
     return pfnXrCreateVulkanDeviceKHR(instance, createInfo, vulkanDevice, vulkanResult);
 }
+
+void mainLoop();
+void createRenderPass();
+void createPipeline();
 
 void shutdown() {
 
@@ -573,6 +593,7 @@ int main(int argc, char *argv[]) {
             Swapchain swapchain;
             swapchain.width = static_cast<int> (swapchainCreateInfo.width);
             swapchain.height = static_cast<int> (swapchainCreateInfo.height);
+            swapchain.format = swapchainCreateInfo.format;
 
             result = xrCreateSwapchain(xrSession, &swapchainCreateInfo, &swapchain.handle);
 
@@ -594,9 +615,9 @@ int main(int argc, char *argv[]) {
                 return 1;
             }
 
-            swapchain.images.resize(swapchainImageCount, {XR_TYPE_SWAPCHAIN_IMAGE_VULKAN2_KHR});
+            swapchainImages[i].resize(swapchainImageCount, {XR_TYPE_SWAPCHAIN_IMAGE_VULKAN2_KHR});
             result = xrEnumerateSwapchainImages(swapchain.handle,
-                                                swapchainImageCount, &swapchainImageCount, reinterpret_cast<XrSwapchainImageBaseHeader *> (swapchain.images.data()));
+                                                swapchainImageCount, &swapchainImageCount, reinterpret_cast<XrSwapchainImageBaseHeader *> (swapchainImages[i].data()));
 
             if (XR_FAILED(result)) {
                 spdlog::error("Failed to get OpenXR Swapchain Images {}", result);
@@ -605,14 +626,39 @@ int main(int argc, char *argv[]) {
                 spdlog::trace("Got OpenXR Swapchain Images");
             }
         }
-
-
     }
 
-    //wasting time to simulate application loop
-    for (int i = 0; i < 50000; i++) {
-        spdlog::info("Frame {}", i);
+    createRenderPass();
+    // Create Pipeline
+    createPipeline();
+
+    VkCommandPoolCreateInfo commandPoolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
+    commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    commandPoolCreateInfo.queueFamilyIndex = vkQueueFamilyIndex;
+
+    vkResult = vkCreateCommandPool(vkDevice, &commandPoolCreateInfo, nullptr, &commandPool);
+
+    if (vkResult != VK_SUCCESS) {
+        spdlog::error("Failed to create Vulkan Command Pool {}", vkResult);
+        return 1;
+    } else {
+        spdlog::trace("Created Vulkan Command Pool");
     }
+
+    wrappedSwapchainImages.resize(EYE_COUNT);
+    for (auto eye = 0; eye < EYE_COUNT; eye++) {
+        wrappedSwapchainImages[eye] = std::vector<SwapchainImage*> {swapchainImages[eye].size() };
+        for (auto i = 0; i < swapchainImages[eye].size(); i++) {
+            wrappedSwapchainImages[eye][i] = new SwapchainImage (
+                vkDevice,
+                &swapchains[eye],
+                swapchainImages[eye][i],
+                renderPass,
+                commandPool
+            );
+        }
+    }
+    mainLoop();
 
     spdlog::info("Exiting");
     shutdown();
@@ -620,3 +666,406 @@ int main(int argc, char *argv[]) {
     spdlog::shutdown();
 }
 
+void processEvents() {
+    XrEventDataBuffer eventDataBuffer{XR_TYPE_EVENT_DATA_BUFFER};
+
+    XrResult result = xrPollEvent(xrInstance, &eventDataBuffer);
+
+    if (result == XR_EVENT_UNAVAILABLE) {
+        return;
+    } else if (XR_FAILED(result)) {
+        spdlog::error("Failed to poll OpenXR event {}", result);
+        return;
+    } else {
+        spdlog::trace("Got OpenXR event");
+        switch (eventDataBuffer.type) {
+            case XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING: {
+                spdlog::info("Instance loss pending");
+                isRunning = false;
+                break;
+            }
+            case XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED: {
+                auto event = *reinterpret_cast<const XrEventDataSessionStateChanged *> (&eventDataBuffer);
+                switch(event.state){
+                    case XR_SESSION_STATE_UNKNOWN:
+                    case XR_SESSION_STATE_MAX_ENUM:
+                        spdlog::info("Session state changed to unknown");
+                        break;
+                    case XR_SESSION_STATE_IDLE:
+                        spdlog::info("Session state changed to idle");
+                        xrSessionInitialized = false;
+                        break;
+                    case XR_SESSION_STATE_READY: {
+                        spdlog::info("Session state changed to ready");
+                        // begin openxr session
+                        XrSessionBeginInfo sessionBeginInfo{XR_TYPE_SESSION_BEGIN_INFO};
+                        sessionBeginInfo.primaryViewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+
+                        result = xrBeginSession(xrSession, &sessionBeginInfo);
+                        if (XR_FAILED(result)) {
+                            spdlog::error("Failed to begin OpenXR session {}", result);
+                            return;
+                        } else {
+                            spdlog::trace("Began OpenXR session");
+                        }
+                        xrSessionInitialized = true;
+                        break;
+                    }
+                    case XR_SESSION_STATE_SYNCHRONIZED:
+                    case XR_SESSION_STATE_VISIBLE:
+                    case XR_SESSION_STATE_FOCUSED:
+                        xrSessionInitialized = true;
+                        break;
+                    case XR_SESSION_STATE_STOPPING:
+                        spdlog::info("Session state changed to stopping");
+
+                        result = xrEndSession(xrSession);
+                        if (XR_FAILED(result)) {
+                            spdlog::error("Failed to end OpenXR session {}", result);
+                            return;
+                        } else {
+                            spdlog::trace("Ended OpenXR session");
+                        }
+                        break;
+                    case XR_SESSION_STATE_LOSS_PENDING:
+                        spdlog::info("Session state changed to loss pending");
+                        isRunning = false;
+                        break;
+                    case XR_SESSION_STATE_EXITING:
+                        spdlog::info("Session state changed to exiting");
+                        isRunning = false;
+                        break;
+                }
+
+                break;
+            }
+            case XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING: {
+                spdlog::info("Reference space change pending");
+                break;
+            }
+            case XR_TYPE_EVENT_DATA_INTERACTION_PROFILE_CHANGED: {
+                spdlog::info("Interaction profile changed");
+                break;
+            }
+            default: {
+                spdlog::warn("Unhandled event type {}", eventDataBuffer.type);
+                break;
+            }
+        }
+    }
+
+}
+void createRenderPass() {
+   VkAttachmentDescription colorAttachment{};
+    colorAttachment.format = static_cast<VkFormat>(swapchainColorFormat);
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the framebuffer before rendering
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store the framebuffer after rendering
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // We don't care about stencil
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // We don't care about initial layout
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // We want to present the image
+
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // We want to use the image as a color attachment
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // We want to use the pipeline for graphics
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    VkResult result = vkCreateRenderPass(vkDevice, &renderPassInfo, nullptr, &renderPass);
+    if (result != VK_SUCCESS) {
+        spdlog::error("Failed to create render pass {}", result);
+        return;
+    } else {
+        spdlog::trace("Created render pass");
+    }
+}
+
+void createPipeline() {
+    auto vertShaderCode = readFile("assets/shaders/simple.vert.spv");
+    auto fragShaderCode = readFile("assets/shaders/simple.frag.spv");
+
+    VkShaderModule vertShaderModule = createShaderModule(vkDevice, vertShaderCode);
+    VkShaderModule fragShaderModule = createShaderModule(vkDevice, fragShaderCode);
+
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.module = vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo{VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+    std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
+    dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+    dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
+
+    VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
+    vertexInputInfo.vertexBindingDescriptionCount = 0;
+    vertexInputInfo.vertexAttributeDescriptionCount = 0;
+    vertexInputInfo.pVertexBindingDescriptions = nullptr;
+    vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly{VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    VkPipelineViewportStateCreateInfo viewportState{VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
+    viewportState.viewportCount = 1;
+    viewportState.scissorCount = 1;
+
+    VkPipelineRasterizationStateCreateInfo rasterizer{VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling{VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                          VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+
+    VkPipelineColorBlendStateCreateInfo colorBlending{VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
+    colorBlending.logicOpEnable = VK_FALSE;
+    colorBlending.attachmentCount = 1;
+    colorBlending.pAttachments = &colorBlendAttachment;
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
+    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+    if (vkCreatePipelineLayout(vkDevice, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        spdlog::error("Failed to create pipeline layout");
+    }
+
+    VkGraphicsPipelineCreateInfo pipelineInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    pipelineInfo.pVertexInputState = &vertexInputInfo;
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewportState;
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
+    pipelineInfo.pDepthStencilState = nullptr;
+    pipelineInfo.layout = pipelineLayout;
+    pipelineInfo.renderPass = renderPass;
+    pipelineInfo.subpass = 0;
+
+    if (vkCreateGraphicsPipelines(vkDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+        spdlog::error("Failed to create graphics pipeline");
+    } else {
+        spdlog::trace("Created graphics pipeline");
+    }
+}
+
+void renderEye(Swapchain* swapchain, const std::vector<SwapchainImage*>& images,
+    XrView view, VkDevice device, VkQueue queue, VkRenderPass renderPass,
+    VkPipelineLayout pipelineLayout, VkPipeline pipeline) {
+
+    XrSwapchainImageAcquireInfo acquireInfo{XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
+    uint32_t swapchainImageIndex;
+
+    XrResult result = xrAcquireSwapchainImage(swapchain->handle, &acquireInfo, &swapchainImageIndex);
+
+    if (result != XR_SUCCESS) {
+        spdlog::error("Failed to acquire swapchain image {}", result);
+        return;
+    }
+
+    XrSwapchainImageWaitInfo waitInfo{XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO};
+    waitInfo.timeout = std::numeric_limits<int64_t>::max();
+
+    result = xrWaitSwapchainImage(swapchain->handle, &waitInfo);
+
+    if (result != XR_SUCCESS) {
+        spdlog::error("Failed to wait for swapchain image {}", result);
+        return;
+    }
+
+    auto& image = images[swapchainImageIndex];
+
+    VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    if (vkBeginCommandBuffer(image->commandBuffer, &beginInfo) != VK_SUCCESS) {
+        spdlog::error("Failed to begin command buffer");
+        return;
+    }
+
+    VkClearValue clearValue{};
+    clearValue.color = {1.0f, 0.0f, 0.0f, 1.0f};
+
+    VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+    renderPassInfo.renderPass = renderPass;
+    renderPassInfo.framebuffer = image->framebuffer;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = { static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height) };
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearValue;
+
+    vkCmdBeginRenderPass(image->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    VkViewport viewport = {
+        0.0f, 0.0f,
+        static_cast<float>(swapchain->width), static_cast<float>(swapchain->height),
+        0.0f, 1.0f
+    };
+
+    VkRect2D scissor = {
+        {0, 0},
+        {static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height)}
+    };
+
+    vkCmdSetViewport(image->commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(image->commandBuffer, 0, 1, &scissor);
+
+    vkCmdBindPipeline(image->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+    vkCmdEndRenderPass(image->commandBuffer);
+
+    if (vkEndCommandBuffer(image->commandBuffer) != VK_SUCCESS) {
+        spdlog::error("Failed to record command buffer");
+        return;
+    }
+
+    VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+    VkSubmitInfo submitInfo{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.pWaitSemaphores = nullptr;
+    submitInfo.pWaitDstStageMask = &waitStage;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &image->commandBuffer;
+    submitInfo.signalSemaphoreCount = 0;
+    submitInfo.pSignalSemaphores = nullptr;
+
+    if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        spdlog::error("Failed to submit queue");
+        return;
+    }
+
+    XrSwapchainImageReleaseInfo releaseInfo{XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO};
+    result = xrReleaseSwapchainImage(swapchain->handle, &releaseInfo);
+
+    if (result != XR_SUCCESS) {
+        spdlog::error("Failed to release swapchain image {}", result);
+        return;
+    }
+}
+
+void renderFrame() {
+
+    XrFrameWaitInfo frameWaitInfo{XR_TYPE_FRAME_WAIT_INFO};
+
+    XrFrameState frameState{XR_TYPE_FRAME_STATE};
+    XrResult result = xrWaitFrame(xrSession, &frameWaitInfo, &frameState);
+
+    if (result != XR_SUCCESS) {
+        spdlog::error("Failed to wait for frame {}", result);
+        return;
+    }
+
+    if (!frameState.shouldRender) {
+        return;
+    }
+
+    XrFrameBeginInfo frameBeginInfo{XR_TYPE_FRAME_BEGIN_INFO};
+    result = xrBeginFrame(xrSession, &frameBeginInfo);
+
+    if (result != XR_SUCCESS) {
+        spdlog::error("Failed to begin frame {}", result);
+        return;
+    }
+
+    XrViewLocateInfo viewLocateInfo{XR_TYPE_VIEW_LOCATE_INFO};
+    viewLocateInfo.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+    viewLocateInfo.displayTime = frameState.predictedDisplayTime;
+    viewLocateInfo.space = xrApplicationSpace;
+
+    XrViewState viewState{XR_TYPE_VIEW_STATE};
+    uint32_t viewCount = EYE_COUNT;
+    std::vector<XrView> views(viewCount, {XR_TYPE_VIEW});
+
+    result = xrLocateViews(xrSession, &viewLocateInfo, &viewState, viewCount, &viewCount, views.data());
+
+    if (result != XR_SUCCESS) {
+        spdlog::error("Failed to locate views {}", result);
+        return;
+    }
+
+    for (auto eye = 0; eye < EYE_COUNT; eye++) {
+        renderEye(
+                &swapchains[eye],
+                wrappedSwapchainImages[eye],
+                views[eye],
+                vkDevice,
+                vkQueue,
+                renderPass,
+                pipelineLayout,
+                pipeline
+        );
+    }
+
+    XrCompositionLayerProjectionView projectionLayerViews[EYE_COUNT] = {};
+
+    for (auto eye = 0; eye < EYE_COUNT; eye++) {
+        projectionLayerViews[eye].type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
+        projectionLayerViews[eye].pose = views[eye].pose;
+        projectionLayerViews[eye].fov = views[eye].fov;
+        projectionLayerViews[eye].subImage.swapchain = swapchains[eye].handle;
+        projectionLayerViews[eye].subImage.imageRect = { { 0, 0 }, { swapchains[eye].width, swapchains[eye].height } };
+        projectionLayerViews[eye].subImage.imageArrayIndex = 0;
+    }
+
+    XrCompositionLayerProjection projectionLayer{XR_TYPE_COMPOSITION_LAYER_PROJECTION};
+    projectionLayer.space = xrApplicationSpace;
+    projectionLayer.viewCount = EYE_COUNT;
+    projectionLayer.views = projectionLayerViews;
+
+    auto pLayer = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&projectionLayer);
+
+    XrFrameEndInfo frameEndInfo{XR_TYPE_FRAME_END_INFO};
+    frameEndInfo.displayTime = frameState.predictedDisplayTime;
+    frameEndInfo.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+    frameEndInfo.layerCount = 1;
+    frameEndInfo.layers = &pLayer;
+
+    result = xrEndFrame(xrSession, &frameEndInfo);
+
+    if (result != XR_SUCCESS) {
+        spdlog::error("Failed to end frame {}", result);
+        return;
+    }
+}
+
+void mainLoop() {
+    while (isRunning) {
+        processEvents();
+        if (xrSessionInitialized)
+            renderFrame();
+    }
+}

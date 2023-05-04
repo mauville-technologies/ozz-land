@@ -1,3 +1,4 @@
+find_package(Vulkan 1.3.243 REQUIRED)
 
 add_subdirectory(spdlog)
 add_subdirectory(vma)

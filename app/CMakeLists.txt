@@ -1,6 +1,6 @@
 set(SOURCES
         src/main.cpp
-)
+        src/swapchain_image.h src/graphics_includes.h src/utils.h)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -9,7 +9,6 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE
         OZZ_VULKAN
     SYSTEM
-        VulkanMemoryAllocator
         spdlog
         openxr_loader
 )
@@ -19,8 +18,24 @@ target_link_libraries(${PROJECT_NAME}
         OZZ_VULKAN
         spdlog
         openxr_loader
-        VulkanMemoryAllocator
 )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED On)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_EXTENSIONS Off)
+
+
+# Get all shader files
+file(GLOB SHADERS shaders/*.vert shaders/*.frag)
+add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory
+        ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${ASSETS_DIR_NAME}/shaders
+)
+
+foreach (SHADER ${SHADERS})
+    get_filename_component(FILE_NAME ${SHADER} NAME)
+    add_custom_command(TARGET ${PROJECT_NAME} PRE_BUILD
+            COMMAND
+                ${Vulkan_GLSLC_EXECUTABLE} -c ${SHADER}
+                -o ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${ASSETS_DIR_NAME}/shaders/${FILE_NAME}.spv
+    )
+endforeach (SHADER)

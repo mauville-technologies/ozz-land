@@ -4,10 +4,13 @@ project(OZZ_LAND VERSION 0.1)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 3.23)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/dist/${CMAKE_SYSTEM_NAME})
+
 #enable C++20
 set(CMAKE_CXX_STANDARD 20)
 
-find_package(Vulkan 1.3.243 REQUIRED)
+set(ASSETS_DIR_NAME "assets")
+
 
 # Libraries
 add_subdirectory(external)
