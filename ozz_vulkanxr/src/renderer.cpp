@@ -37,9 +37,25 @@ namespace OZZ {
         processXREvents();
     }
 
+    void Renderer::Submit(VkCommandBuffer commandBuffer, EyeTarget target) {
+        if (!currentFrameBufferCache || !currentFrameBufferCache->Available) {
+            spdlog::warn("No available frame buffer cache. Have you began the frame?");
+            return;
+        }
+        currentFrameBufferCache->PushCommandBuffer(commandBuffer, target);
+    }
+
     void Renderer::RenderFrame() {
+        // Clean and check framebuffer caches
+        for (auto& cache : frameCommandBufferCache) {
+            cache.CheckAndClearCaches(vkDevice, commandPool);
+        }
+
+
         if (!xrSessionInitialized) return;
+
         XrFrameWaitInfo frameWaitInfo{XR_TYPE_FRAME_WAIT_INFO};
+
 
         XrFrameState frameState{XR_TYPE_FRAME_STATE};
         XrResult result = xrWaitFrame(xrSession, &frameWaitInfo, &frameState);
@@ -53,6 +69,8 @@ namespace OZZ {
             return;
         }
 
+        // Get available frame cache
+        currentFrameBufferCache = getAvailableFrameBufferCache(vkDevice);
         XrFrameBeginInfo frameBeginInfo{XR_TYPE_FRAME_BEGIN_INFO};
         result = xrBeginFrame(xrSession, &frameBeginInfo);
 
@@ -85,8 +103,7 @@ namespace OZZ {
                     vkDevice,
                     vkQueue,
                     renderPass,
-                    VK_NULL_HANDLE,
-                    VK_NULL_HANDLE
+                    static_cast<EyeTarget>(eye)
             );
         }
 
@@ -120,10 +137,13 @@ namespace OZZ {
             spdlog::error("Failed to end frame {}", result);
             return;
         }
+
+        // No more frame buffer cache
+        currentFrameBufferCache = nullptr;
     }
+
     void Renderer::renderEye(Swapchain* swapchain, const std::vector<std::unique_ptr<SwapchainImage>>& images,
-                   XrView view, VkDevice device, VkQueue queue, VkRenderPass renderPass,
-                   VkPipelineLayout pipelineLayout, VkPipeline pipeline) {
+                   XrView view, VkDevice device, VkQueue queue, VkRenderPass renderPass, EyeTarget eye) {
 
         XrSwapchainImageAcquireInfo acquireInfo{XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
         uint32_t swapchainImageIndex;
@@ -168,21 +188,19 @@ namespace OZZ {
 
         vkCmdBeginRenderPass(image->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        VkViewport viewport = {
-                0.0f, 0.0f,
-                static_cast<float>(swapchain->width), static_cast<float>(swapchain->height),
-                0.0f, 1.0f
-        };
+        // execute current frame buffer cache for current eye
+        if (!currentFrameBufferCache) {
+            spdlog::error("No frame buffer cache");
+        }
 
-        VkRect2D scissor = {
-                {0, 0},
-                {static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height)}
-        };
+        auto& eyeBuffers = currentFrameBufferCache->GetCommandBuffers(eye);
+        auto& bothBuffers = currentFrameBufferCache->GetCommandBuffers(EyeTarget::BOTH);
 
-        vkCmdSetViewport(image->commandBuffer, 0, 1, &viewport);
-        vkCmdSetScissor(image->commandBuffer, 0, 1, &scissor);
+        if (!eyeBuffers.empty())
+            vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(eyeBuffers.size()), eyeBuffers.data());
 
-        vkCmdBindPipeline(image->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+        if (!bothBuffers.empty())
+            vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());
 
         vkCmdEndRenderPass(image->commandBuffer);
 
@@ -202,7 +220,10 @@ namespace OZZ {
         submitInfo.signalSemaphoreCount = 0;
         submitInfo.pSignalSemaphores = nullptr;
 
-        if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+        // Get the appropriate fence for the current eye
+        auto fence = currentFrameBufferCache->GetFence(eye);
+
+        if (vkQueueSubmit(queue, 1, &submitInfo, fence) != VK_SUCCESS) {
             spdlog::error("Failed to submit queue");
             return;
         }
@@ -280,6 +301,24 @@ namespace OZZ {
             xrInstance = XR_NULL_HANDLE;
             spdlog::trace("Destroyed OpenXR Instance.");
         }
+    }
+
+    VkCommandBuffer Renderer::GetCommandBufferForSubmission() {
+        // create a new secondary command buffer
+        VkCommandBufferAllocateInfo allocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer;
+        auto result = vkAllocateCommandBuffers(vkDevice, &allocInfo, &commandBuffer);
+
+        if (result != VK_SUCCESS) {
+            spdlog::error("Failed to allocate command buffer {}", result);
+            return nullptr;
+        }
+
+        return commandBuffer;
     }
 
     void Renderer::initXrInstance() {
