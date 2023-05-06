@@ -1,6 +1,6 @@
 set(SOURCES
         src/main.cpp
-        ../ozz_vulkanxr/include/ozz_vulkan/swapchain_image.h ../ozz_vulkanxr/include/ozz_vulkan/graphics_includes.h ../ozz_vulkanxr/include/ozz_vulkan/utils.h)
+        ../ozz_vulkanxr/include/ozz_vulkan/internal/swapchain_image.h ../ozz_vulkanxr/include/ozz_vulkan/internal/graphics_includes.h ../ozz_vulkanxr/include/ozz_vulkan/internal/utils.h)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})

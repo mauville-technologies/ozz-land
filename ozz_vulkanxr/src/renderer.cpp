@@ -3,8 +3,8 @@
 //
 
 #include <ozz_vulkan/renderer.h>
-#include <ozz_vulkan/xr_utils.h>
-#include <ozz_vulkan/vk_utils.h>
+#include "ozz_vulkan/internal/xr_utils.h"
+#include "ozz_vulkan/internal/vk_utils.h"
 
 namespace OZZ {
 
@@ -31,18 +31,32 @@ namespace OZZ {
         createRenderPass();
         createCommandPool();
         createFrameData();
+
+        OZZ::ShaderConfiguration config {
+                .VertexShaderPath = "assets/shaders/simple.vert.spv",
+                .FragmentShaderPath = "assets/shaders/simple.frag.spv"
+        };
+        shader = CreateShader(config);
     }
 
     void Renderer::Update() {
         processXREvents();
     }
 
-    void Renderer::Submit(VkCommandBuffer commandBuffer, EyeTarget target) {
-        if (!currentFrameBufferCache || !currentFrameBufferCache->Available) {
-            spdlog::warn("No available frame buffer cache. Have you began the frame?");
-            return;
+    void Renderer::BeginFrame() {
+        // Get available frame cache
+        currentFrameBufferCache = getAvailableFrameBufferCache(vkDevice);
+    }
+
+    VkCommandBuffer Renderer::RequestCommandBuffer(EyeTarget target) {
+        if (!currentFrameBufferCache) {
+            spdlog::warn("No selected frame buffer cache. Have you began the frame?");
+            return VK_NULL_HANDLE;
         }
-        currentFrameBufferCache->PushCommandBuffer(commandBuffer, target);
+        auto newBuffer = getCommandBufferForSubmission();
+        currentFrameBufferCache->PushCommandBuffer(newBuffer, target);
+
+        return newBuffer;
     }
 
     void Renderer::RenderFrame() {
@@ -51,11 +65,9 @@ namespace OZZ {
             cache.CheckAndClearCaches(vkDevice, commandPool);
         }
 
-
         if (!xrSessionInitialized) return;
 
         XrFrameWaitInfo frameWaitInfo{XR_TYPE_FRAME_WAIT_INFO};
-
 
         XrFrameState frameState{XR_TYPE_FRAME_STATE};
         XrResult result = xrWaitFrame(xrSession, &frameWaitInfo, &frameState);
@@ -69,8 +81,6 @@ namespace OZZ {
             return;
         }
 
-        // Get available frame cache
-        currentFrameBufferCache = getAvailableFrameBufferCache(vkDevice);
         XrFrameBeginInfo frameBeginInfo{XR_TYPE_FRAME_BEGIN_INFO};
         result = xrBeginFrame(xrSession, &frameBeginInfo);
 
@@ -137,7 +147,9 @@ namespace OZZ {
             spdlog::error("Failed to end frame {}", result);
             return;
         }
+    }
 
+    void Renderer::EndFrame() {
         // No more frame buffer cache
         currentFrameBufferCache = nullptr;
     }
@@ -176,7 +188,7 @@ namespace OZZ {
         }
 
         VkClearValue clearValue{};
-        clearValue.color = {1.0f, 0.0f, 0.0f, 1.0f};
+        clearValue.color = {0.2f, 0.2f, 0.2f, 1.0f};
 
         VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         renderPassInfo.renderPass = renderPass;
@@ -186,7 +198,8 @@ namespace OZZ {
         renderPassInfo.clearValueCount = 1;
         renderPassInfo.pClearValues = &clearValue;
 
-        vkCmdBeginRenderPass(image->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(image->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+
 
         // execute current frame buffer cache for current eye
         if (!currentFrameBufferCache) {
@@ -196,11 +209,8 @@ namespace OZZ {
         auto& eyeBuffers = currentFrameBufferCache->GetCommandBuffers(eye);
         auto& bothBuffers = currentFrameBufferCache->GetCommandBuffers(EyeTarget::BOTH);
 
-        if (!eyeBuffers.empty())
-            vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(eyeBuffers.size()), eyeBuffers.data());
-
-        if (!bothBuffers.empty())
-            vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());
+//        vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(eyeBuffers.size()), eyeBuffers.data());
+        vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());
 
         vkCmdEndRenderPass(image->commandBuffer);
 
@@ -284,7 +294,7 @@ namespace OZZ {
         // destroy debug messenger if exists
         if (vkDebugMessenger != VK_NULL_HANDLE) {
             spdlog::trace("Destroying Vulkan Debug Messenger.");
-            vkDestroyDebugUtilsMessengerEXT(vkInstance, vkDebugMessenger, nullptr);
+            OZZ::vkDestroyDebugUtilsMessengerEXT(vkInstance, vkDebugMessenger, nullptr);
             vkDebugMessenger = VK_NULL_HANDLE;
         }
 
@@ -303,22 +313,10 @@ namespace OZZ {
         }
     }
 
-    VkCommandBuffer Renderer::GetCommandBufferForSubmission() {
-        // create a new secondary command buffer
-        VkCommandBufferAllocateInfo allocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
-        allocInfo.commandPool = commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-        allocInfo.commandBufferCount = 1;
 
-        VkCommandBuffer commandBuffer;
-        auto result = vkAllocateCommandBuffers(vkDevice, &allocInfo, &commandBuffer);
-
-        if (result != VK_SUCCESS) {
-            spdlog::error("Failed to allocate command buffer {}", result);
-            return nullptr;
-        }
-
-        return commandBuffer;
+    std::unique_ptr<Shader> Renderer::CreateShader(ShaderConfiguration &config) {
+        config.RenderPass = renderPass;
+        return std::make_unique<Shader>(vkDevice, config);
     }
 
     void Renderer::initXrInstance() {
@@ -482,7 +480,8 @@ namespace OZZ {
         debugUtilsMessengerCreateInfoExt.pUserData = nullptr;
 
         // Create debug utils messenger
-        auto vkResult = vkCreateDebugUtilsMessengerEXT(vkInstance, &debugUtilsMessengerCreateInfoExt, nullptr,
+
+        auto vkResult = OZZ::vkCreateDebugUtilsMessengerEXT(vkInstance, &debugUtilsMessengerCreateInfoExt, nullptr,
                                                   &vkDebugMessenger);
 
         if (vkResult != VK_SUCCESS) {
@@ -909,6 +908,24 @@ namespace OZZ {
 
     }
 
+    VkCommandBuffer Renderer::getCommandBufferForSubmission() {
+        // create a new secondary command buffer
+        VkCommandBufferAllocateInfo allocInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
+        allocInfo.commandPool = commandPool;
+        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        allocInfo.commandBufferCount = 1;
+
+        VkCommandBuffer commandBuffer;
+        auto result = vkAllocateCommandBuffers(vkDevice, &allocInfo, &commandBuffer);
+
+        if (result != VK_SUCCESS) {
+            spdlog::error("Failed to allocate command buffer {}", result);
+            return nullptr;
+        }
+
+        return commandBuffer;
+    }
+
     VkBool32 Renderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                      VkDebugUtilsMessageTypeFlagsEXT messageType,
                                      const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
@@ -916,5 +933,7 @@ namespace OZZ {
         spdlog::info("Vulkan Debug Message: {}", pCallbackData->pMessage);
         return VK_TRUE;
     }
+
+
 
 }

@@ -5,9 +5,11 @@ CMAKE_MINIMUM_REQUIRED(VERSION 3.23)
 find_package(Vulkan 1.3.243 REQUIRED)
 
 set(SOURCES
-        include/ozz_vulkan/vk_utils.h
+        include/ozz_vulkan/internal/vk_utils.h
         src/renderer.cpp
-        src/vma_implementation.cpp)
+        src/vma_implementation.cpp
+        src/shader.cpp
+        )
 
 
 add_library(${PROJECT_NAME} ${SOURCES})

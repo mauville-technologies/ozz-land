@@ -7,96 +7,35 @@
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #define EYE_COUNT 2
 
-#include <ozz_vulkan/graphics_includes.h>
-#include <ozz_vulkan/swapchain_image.h>
+#include "ozz_vulkan/internal/graphics_includes.h"
+#include "ozz_vulkan/internal/swapchain_image.h"
+#include "ozz_vulkan/internal/xr_types.h"
+#include "ozz_vulkan/resources/shader.h"
+
+#include "ozz_vulkan/internal/frame_command_buffer_cache.h"
 
 #include <memory>
 #include <vk_mem_alloc.h>
 #include <unordered_map>
+#include <tuple>
 
 namespace OZZ {
-    enum class EyeTarget {
-        LEFT,
-        RIGHT,
-        BOTH,
-    };
-
-    struct FrameCommandBufferCache {
-        explicit FrameCommandBufferCache(VkDevice vkDevice) {
-            // Create fences
-            VkFenceCreateInfo fenceCreateInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
-            if (vkCreateFence(vkDevice, &fenceCreateInfo, nullptr, &leftEyeFence) != VK_SUCCESS ||
-                vkCreateFence(vkDevice, &fenceCreateInfo, nullptr, &rightEyeFence) != VK_SUCCESS) {
-                spdlog::error("Failed to create fences");
-            }
-
-            CommandBuffers[EyeTarget::LEFT] = {};
-            CommandBuffers[EyeTarget::RIGHT] = {};
-            CommandBuffers[EyeTarget::BOTH] = {};
-        }
-
-        void Claim() {
-            Available = false;
-        }
-
-        void CheckAndClearCaches(VkDevice vkDevice, VkCommandPool commandPool, uint64_t timeout = 0) {
-            VkFence fences[] = {leftEyeFence, rightEyeFence};
-
-            if (vkWaitForFences(vkDevice, 2, fences, VK_TRUE, timeout) == VK_SUCCESS) {
-                // Delete command buffers
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::LEFT].size(),
-                                     CommandBuffers[OZZ::EyeTarget::LEFT].data());
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::RIGHT].size(),
-                                     CommandBuffers[OZZ::EyeTarget::RIGHT].data());
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::BOTH].size(),
-                                     CommandBuffers[OZZ::EyeTarget::BOTH].data());
-                CommandBuffers[OZZ::EyeTarget::LEFT].clear();
-                CommandBuffers[OZZ::EyeTarget::RIGHT].clear();
-                CommandBuffers[OZZ::EyeTarget::BOTH].clear();
-
-                // Reset fences
-                vkResetFences(vkDevice, 2, fences);
-
-                Available = true;
-                spdlog::trace("Cleared command buffer cache");
-            }
-        }
-
-        const auto& GetFence(EyeTarget target) const {
-            if (target == EyeTarget::LEFT) {
-                return leftEyeFence;
-            } else {
-                return rightEyeFence;
-            }
-        }
-
-        const auto& GetCommandBuffers(EyeTarget target) const {
-            return CommandBuffers.at(target);
-        }
-
-        void PushCommandBuffer(VkCommandBuffer commandBuffer, EyeTarget target) {
-            CommandBuffers.at(target).push_back(commandBuffer);
-        }
-
-        bool Available {true};
-    private:
-        std::unordered_map<EyeTarget, std::vector<VkCommandBuffer>> CommandBuffers;
-        VkFence leftEyeFence {VK_NULL_HANDLE};
-        VkFence rightEyeFence {VK_NULL_HANDLE};
-    };
-
     class Renderer {
     public:
         Renderer();
         ~Renderer();
 
+        // Lifecycle functions
         void Init();
         void Update();
-        void Submit(VkCommandBuffer commandBuffer, EyeTarget target);
+        void BeginFrame();
+        VkCommandBuffer RequestCommandBuffer(EyeTarget target);
         void RenderFrame();
+        void EndFrame();
         void Cleanup();
 
-        VkCommandBuffer GetCommandBufferForSubmission();
+        std::unique_ptr<Shader> CreateShader(ShaderConfiguration& config);
+        std::tuple<int, int> GetSwapchainSize() const { return std::make_tuple(swapchains[0].width, swapchains[0].height); }
     private:
         void initXrInstance();
         void initGetXrSystem();
@@ -116,6 +55,7 @@ namespace OZZ {
 
         void processXREvents();
 
+        VkCommandBuffer getCommandBufferForSubmission();
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                             VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -146,8 +86,6 @@ namespace OZZ {
         int64_t swapchainColorFormat{-1};
         std::vector<Swapchain> swapchains;
 
-
-
         /*
          * The Framebuffer cache conatains secondary command buffers for each eye, or both eyes
          *
@@ -176,8 +114,13 @@ namespace OZZ {
             // No available cache found, create a new one
             frameCommandBufferCache.emplace_back(vkDevice);
             frameCommandBufferCache.back().Claim();
+
+            if (frameCommandBufferCache.size() > 5) {
+                spdlog::warn("Frame command buffer cache is getting large, performance could be suffering.");
+            }
             return &frameCommandBufferCache.back();
         }
 
+        std::unique_ptr<Shader> shader;
     };
 } // namespace OZZ
