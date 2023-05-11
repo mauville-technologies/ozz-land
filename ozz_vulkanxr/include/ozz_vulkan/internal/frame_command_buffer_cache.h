@@ -12,7 +12,8 @@
 
 namespace OZZ {
     struct FrameCommandBufferCache {
-        explicit FrameCommandBufferCache(VkDevice vkDevice) {
+        explicit FrameCommandBufferCache(VkDevice vkDevice,
+                                         VkCommandPool commandPool) : vkDevice(vkDevice), commandPool(commandPool) {
             // Create fences
             VkFenceCreateInfo fenceCreateInfo {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
             if (vkCreateFence(vkDevice, &fenceCreateInfo, nullptr, &leftEyeFence) != VK_SUCCESS ||
@@ -25,24 +26,31 @@ namespace OZZ {
             CommandBuffers[EyeTarget::BOTH] = {};
         }
 
+        ~FrameCommandBufferCache() {
+            spdlog::trace("Destroying FrameCommandBufferCache");
+            if (leftEyeFence != VK_NULL_HANDLE) {
+                vkDestroyFence(vkDevice, leftEyeFence, nullptr);
+                leftEyeFence = VK_NULL_HANDLE;
+            }
+
+            if (rightEyeFence != VK_NULL_HANDLE) {
+                vkDestroyFence(vkDevice, rightEyeFence, nullptr);
+                rightEyeFence = VK_NULL_HANDLE;
+            }
+
+            clearCommandBuffers();
+        }
+
         void Claim() {
             Available = false;
         }
 
-        void CheckAndClearCaches(VkDevice vkDevice, VkCommandPool commandPool, uint64_t timeout = 0) {
+        void CheckAndClearCaches(uint64_t timeout = 0) {
             VkFence fences[] = {leftEyeFence, rightEyeFence};
 
             if (vkWaitForFences(vkDevice, 2, fences, VK_TRUE, timeout) == VK_SUCCESS) {
-                // Delete command buffers
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::LEFT].size(),
-                                     CommandBuffers[OZZ::EyeTarget::LEFT].data());
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::RIGHT].size(),
-                                     CommandBuffers[OZZ::EyeTarget::RIGHT].data());
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::BOTH].size(),
-                                     CommandBuffers[OZZ::EyeTarget::BOTH].data());
-                CommandBuffers[OZZ::EyeTarget::LEFT].clear();
-                CommandBuffers[OZZ::EyeTarget::RIGHT].clear();
-                CommandBuffers[OZZ::EyeTarget::BOTH].clear();
+                // Clear command buffers
+                clearCommandBuffers();
 
                 // Reset fences
                 vkResetFences(vkDevice, 2, fences);
@@ -69,9 +77,30 @@ namespace OZZ {
 
         bool Available {true};
     private:
+        void clearCommandBuffers() {
+            if (!CommandBuffers[OZZ::EyeTarget::LEFT].empty())
+                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::LEFT].size(),
+                                     CommandBuffers[OZZ::EyeTarget::LEFT].data());
+
+            if (!CommandBuffers[OZZ::EyeTarget::RIGHT].empty())
+                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::RIGHT].size(),
+                                     CommandBuffers[OZZ::EyeTarget::RIGHT].data());
+
+            if (!CommandBuffers[OZZ::EyeTarget::BOTH].empty())
+                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::BOTH].size(),
+                                     CommandBuffers[OZZ::EyeTarget::BOTH].data());
+
+            CommandBuffers[OZZ::EyeTarget::LEFT].clear();
+            CommandBuffers[OZZ::EyeTarget::RIGHT].clear();
+            CommandBuffers[OZZ::EyeTarget::BOTH].clear();
+        }
+    private:
         std::unordered_map<EyeTarget, std::vector<VkCommandBuffer>> CommandBuffers;
         VkFence leftEyeFence {VK_NULL_HANDLE};
         VkFence rightEyeFence {VK_NULL_HANDLE};
+
+        VkDevice vkDevice {VK_NULL_HANDLE};
+        VkCommandPool commandPool {VK_NULL_HANDLE};
     };
 
 }

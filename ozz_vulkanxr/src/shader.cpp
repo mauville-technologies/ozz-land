@@ -8,10 +8,11 @@
 #include <utility>
 #include <ozz_vulkan/internal/vk_utils.h>
 #include <spdlog/spdlog.h>
+#include "ozz_vulkan/resources/types.h"
 
 namespace OZZ {
 
-    Shader::Shader(VkDevice device, ShaderConfiguration  config) : _device(device), _config(std::move(config)) {
+    Shader::Shader(VkDevice device, ShaderConfiguration config) : _device(device), _config(std::move(config)) {
         spdlog::trace("Creating shader with vertex shader path: {} and fragment shader path: {}",
                       _config.VertexShaderPath.string(), _config.FragmentShaderPath.string());
         createPipeline();
@@ -53,17 +54,20 @@ namespace OZZ {
 
         VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
-        std::vector <VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+        std::vector<VkDynamicState> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
         VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo{VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
         dynamicStateCreateInfo.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
         dynamicStateCreateInfo.pDynamicStates = dynamicStates.data();
 
+        auto bindings = Vertex::getBindingDescription();
+        auto attributes = Vertex::getAttributeDescriptions();
+
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
-        vertexInputInfo.vertexBindingDescriptionCount = 0;
-        vertexInputInfo.vertexAttributeDescriptionCount = 0;
-        vertexInputInfo.pVertexBindingDescriptions = nullptr;
-        vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+        vertexInputInfo.vertexBindingDescriptionCount = 1;
+        vertexInputInfo.vertexAttributeDescriptionCount = attributes.size();
+        vertexInputInfo.pVertexBindingDescriptions = &bindings;
+        vertexInputInfo.pVertexAttributeDescriptions = attributes.data();
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly{
                 VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
@@ -125,6 +129,8 @@ namespace OZZ {
         } else {
             spdlog::trace("Created graphics pipeline");
         }
+        vkDestroyShaderModule(_device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(_device, vertShaderModule, nullptr);
     }
 
 

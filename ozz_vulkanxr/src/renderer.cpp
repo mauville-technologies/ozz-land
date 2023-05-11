@@ -31,16 +31,10 @@ namespace OZZ {
         createRenderPass();
         createCommandPool();
         createFrameData();
-
-        OZZ::ShaderConfiguration config {
-                .VertexShaderPath = "assets/shaders/simple.vert.spv",
-                .FragmentShaderPath = "assets/shaders/simple.frag.spv"
-        };
-        shader = CreateShader(config);
     }
 
-    void Renderer::Update() {
-        processXREvents();
+    bool Renderer::Update() {
+        return processXREvents();
     }
 
     void Renderer::BeginFrame() {
@@ -62,7 +56,7 @@ namespace OZZ {
     void Renderer::RenderFrame() {
         // Clean and check framebuffer caches
         for (auto& cache : frameCommandBufferCache) {
-            cache.CheckAndClearCaches(vkDevice, commandPool);
+            cache->CheckAndClearCaches();
         }
 
         if (!xrSessionInitialized) return;
@@ -141,12 +135,15 @@ namespace OZZ {
         frameEndInfo.layerCount = 1;
         frameEndInfo.layers = &pLayer;
 
+        _pauseValidation = true;
         result = xrEndFrame(xrSession, &frameEndInfo);
 
         if (result != XR_SUCCESS) {
             spdlog::error("Failed to end frame {}", result);
             return;
         }
+
+        _pauseValidation = false;
     }
 
     void Renderer::EndFrame() {
@@ -209,8 +206,11 @@ namespace OZZ {
         auto& eyeBuffers = currentFrameBufferCache->GetCommandBuffers(eye);
         auto& bothBuffers = currentFrameBufferCache->GetCommandBuffers(EyeTarget::BOTH);
 
-//        vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(eyeBuffers.size()), eyeBuffers.data());
-        vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());
+        if (!eyeBuffers.empty())
+            vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(eyeBuffers.size()), eyeBuffers.data());
+
+        if (!bothBuffers.empty())
+            vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());
 
         vkCmdEndRenderPass(image->commandBuffer);
 
@@ -247,9 +247,33 @@ namespace OZZ {
         }
     }
 
-    void Renderer::Cleanup() {
+    void Renderer::WaitIdle() {
+        if (vkDevice != nullptr) {
+            vkDeviceWaitIdle(vkDevice);
+        }
+    }
 
+    void Renderer::Cleanup() {
         spdlog::info("Shutting down renderer.");
+
+        vkDeviceWaitIdle(vkDevice);
+
+        // clear swapchain images
+        wrappedSwapchainImages.clear();
+
+        // Clear framebuffer cache
+        currentFrameBufferCache = nullptr;
+        frameCommandBufferCache.clear();
+
+        if (commandPool != VK_NULL_HANDLE) {
+            vkDestroyCommandPool(vkDevice, commandPool, nullptr);
+            commandPool = VK_NULL_HANDLE;
+        }
+
+        if (renderPass != VK_NULL_HANDLE) {
+            vkDestroyRenderPass(vkDevice, renderPass, nullptr);
+            renderPass = VK_NULL_HANDLE;
+        }
 
         // Destroy OpenXR Swapchains
         for (auto& swapchain : swapchains) {
@@ -260,9 +284,6 @@ namespace OZZ {
 
         swapchains.clear();
 
-        // Clear OpenXR System Id
-        xrSystemId = XR_NULL_SYSTEM_ID;
-
         // Destroy OpenXR Application Space if exists
         if (xrApplicationSpace != XR_NULL_HANDLE) {
             xrDestroySpace(xrApplicationSpace);
@@ -270,9 +291,13 @@ namespace OZZ {
             spdlog::trace("Destroyed OpenXR Application Space.");
         }
 
+
         // Destroy OpenXR Session if exists
         if (xrSession != XR_NULL_HANDLE) {
-            xrDestroySession(xrSession);
+            auto result = xrDestroySession(xrSession);
+            if (result != XR_SUCCESS) {
+                spdlog::error("Failed to destroy OpenXR Session {}", result);
+            }
             xrSession = XR_NULL_HANDLE;
             spdlog::trace("Destroyed OpenXR Session.");
         }
@@ -284,12 +309,21 @@ namespace OZZ {
             spdlog::trace("Destroyed VMA Allocator.");
         }
 
+        /*
+         * OpenXR and SteamVR are not cleaning up resources correctly.
+         * Let's shut up validation errors when destroying the device (for now)
+         */
+
+        _pauseValidation = true;
+
         // Destroy Vulkan Device if exists
         if (vkDevice != VK_NULL_HANDLE) {
             vkDestroyDevice(vkDevice, nullptr);
             vkDevice = VK_NULL_HANDLE;
             spdlog::trace("Destroyed Vulkan Device.");
         }
+
+        _pauseValidation = false;
 
         // destroy debug messenger if exists
         if (vkDebugMessenger != VK_NULL_HANDLE) {
@@ -305,18 +339,33 @@ namespace OZZ {
             spdlog::trace("Destroyed Vulkan Instance.");
         }
 
+        // Clear OpenXR System Id
+        xrSystemId = XR_NULL_SYSTEM_ID;
+
         // Destroy OpenXR Instance if exists
+        //TODO: WHY DOES THIS HANG ON LINUX!?!
+
         if (xrInstance != XR_NULL_HANDLE) {
-            xrDestroyInstance(xrInstance);
-            xrInstance = XR_NULL_HANDLE;
-            spdlog::trace("Destroyed OpenXR Instance.");
+            spdlog::trace("Destroying OpenXR Instance.");
+
+            std::thread t([&]() {
+                xrDestroyInstance(xrInstance);
+                xrInstance = XR_NULL_HANDLE;
+                spdlog::trace("Destroyed OpenXR Instance.");
+            });
+            t.detach();
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
     }
-
 
     std::unique_ptr<Shader> Renderer::CreateShader(ShaderConfiguration &config) {
         config.RenderPass = renderPass;
         return std::make_unique<Shader>(vkDevice, config);
+    }
+
+    std::unique_ptr<VertexBuffer> Renderer::CreateVertexBuffer(const std::vector<Vertex> &vertices) {
+        return std::make_unique<VertexBuffer>(vmaAllocator, vertices);
     }
 
     void Renderer::initXrInstance() {
@@ -477,7 +526,7 @@ namespace OZZ {
                 VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                 VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         debugUtilsMessengerCreateInfoExt.pfnUserCallback = &Renderer::debugCallback;
-        debugUtilsMessengerCreateInfoExt.pUserData = nullptr;
+        debugUtilsMessengerCreateInfoExt.pUserData = this;
 
         // Create debug utils messenger
 
@@ -697,11 +746,6 @@ namespace OZZ {
 
             swapchainColorFormat = SelectColorSwapchainFormat(swapchainFormats);
 
-            // Print swapchain formats and selected one
-            spdlog::info("Swapchain Formats:");
-            for (auto format : swapchainFormats) {
-                spdlog::info("{}", format);
-            }
             spdlog::info("Selected Swapchain Format: {}", swapchainColorFormat);
 
             // Create a swapchain for each view
@@ -764,7 +808,7 @@ namespace OZZ {
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // We don't care about stencil
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // We don't care about initial layout
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // We want to present the image
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // We want to present the image
 
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0;
@@ -784,6 +828,7 @@ namespace OZZ {
         VkResult result = vkCreateRenderPass(vkDevice, &renderPassInfo, nullptr, &renderPass);
         if (result != VK_SUCCESS) {
             spdlog::error("Failed to create render pass {}", result);
+            throw std::runtime_error("Failed to create render pass");
             return;
         } else {
             spdlog::trace("Created render pass");
@@ -821,16 +866,16 @@ namespace OZZ {
         }
     }
 
-    void Renderer::processXREvents() {
+    bool Renderer::processXREvents() {
         XrEventDataBuffer eventDataBuffer{XR_TYPE_EVENT_DATA_BUFFER};
 
         XrResult result = xrPollEvent(xrInstance, &eventDataBuffer);
 
         if (result == XR_EVENT_UNAVAILABLE) {
-            return;
+            return false;
         } else if (XR_FAILED(result)) {
             spdlog::error("Failed to poll OpenXR event {}", result);
-            return;
+            return false;
         } else {
             spdlog::trace("Got OpenXR event");
             switch (eventDataBuffer.type) {
@@ -858,7 +903,7 @@ namespace OZZ {
                             result = xrBeginSession(xrSession, &sessionBeginInfo);
                             if (XR_FAILED(result)) {
                                 spdlog::error("Failed to begin OpenXR session {}", result);
-                                return;
+                                return true;
                             } else {
                                 spdlog::trace("Began OpenXR session");
                             }
@@ -876,10 +921,10 @@ namespace OZZ {
                             result = xrEndSession(xrSession);
                             if (XR_FAILED(result)) {
                                 spdlog::error("Failed to end OpenXR session {}", result);
-                                return;
                             } else {
                                 spdlog::trace("Ended OpenXR session");
                             }
+                            return true;
                             break;
                         case XR_SESSION_STATE_LOSS_PENDING:
                             spdlog::info("Session state changed to loss pending");
@@ -904,6 +949,7 @@ namespace OZZ {
                     break;
                 }
             }
+            return false;
         }
 
     }
@@ -929,11 +975,11 @@ namespace OZZ {
     VkBool32 Renderer::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                      VkDebugUtilsMessageTypeFlagsEXT messageType,
                                      const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
+        if (((Renderer*)pUserData)->_pauseValidation) return VK_FALSE;
         spdlog::info("Vulkan Debug Message Severity: {}", messageSeverity);
         spdlog::info("Vulkan Debug Message: {}", pCallbackData->pMessage);
-        return VK_TRUE;
+        return VK_FALSE;
     }
-
 
 
 }

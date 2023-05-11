@@ -16,7 +16,7 @@ struct Swapchain {
 
 struct SwapchainImage {
     SwapchainImage() = default;
-    ~SwapchainImage() = default;
+
     // Copy constructor
     SwapchainImage(const SwapchainImage& other) {
         imageView = other.imageView;
@@ -31,10 +31,12 @@ struct SwapchainImage {
         image = other.image;
         framebuffer = other.framebuffer;
         commandBuffer = other.commandBuffer;
+        vkDevice = other.vkDevice;
+        commandPool = other.commandPool;
     }
 
     SwapchainImage(VkDevice device, const Swapchain *swapchain, XrSwapchainImageVulkan2KHR image,
-        VkRenderPass renderPass, VkCommandPool commandPool): image(image) {
+        VkRenderPass renderPass, VkCommandPool commandPool): image(image), vkDevice(device), commandPool(commandPool) {
 
         VkImageViewCreateInfo imageViewCreateInfo { .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
         imageViewCreateInfo.image = image.image;
@@ -74,8 +76,20 @@ struct SwapchainImage {
         }
     }
 
+    ~SwapchainImage() {
+        spdlog::trace("Destroying swapchain image");
+        vkDestroyImageView(vkDevice, imageView, nullptr);
+        vkDestroyFramebuffer(vkDevice, framebuffer, nullptr);
+        vkFreeCommandBuffers(vkDevice, commandPool, 1, &commandBuffer);
+        vkDevice = VK_NULL_HANDLE;
+        commandPool = VK_NULL_HANDLE;
+    }
+
     VkImageView imageView { VK_NULL_HANDLE };
     XrSwapchainImageVulkan2KHR image;
     VkFramebuffer framebuffer { VK_NULL_HANDLE };
     VkCommandBuffer commandBuffer { VK_NULL_HANDLE };
+
+    VkCommandPool commandPool { VK_NULL_HANDLE };
+    VkDevice vkDevice { VK_NULL_HANDLE };
 };

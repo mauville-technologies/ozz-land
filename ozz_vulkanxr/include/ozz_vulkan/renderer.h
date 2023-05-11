@@ -13,9 +13,9 @@
 #include "ozz_vulkan/resources/shader.h"
 
 #include "ozz_vulkan/internal/frame_command_buffer_cache.h"
+#include "ozz_vulkan/resources/buffer.h"
 
 #include <memory>
-#include <vk_mem_alloc.h>
 #include <unordered_map>
 #include <tuple>
 
@@ -27,15 +27,20 @@ namespace OZZ {
 
         // Lifecycle functions
         void Init();
-        void Update();
+        // Returns true if application should close
+        bool Update();
         void BeginFrame();
         VkCommandBuffer RequestCommandBuffer(EyeTarget target);
         void RenderFrame();
         void EndFrame();
+        void WaitIdle();
         void Cleanup();
 
+        // Resource functions
         std::unique_ptr<Shader> CreateShader(ShaderConfiguration& config);
-        std::tuple<int, int> GetSwapchainSize() const { return std::make_tuple(swapchains[0].width, swapchains[0].height); }
+        std::unique_ptr<VertexBuffer> CreateVertexBuffer(const std::vector<Vertex>& vertices);
+
+        [[nodiscard]] std::tuple<int, int> GetSwapchainSize() const { return std::make_tuple(swapchains[0].width, swapchains[0].height); }
     private:
         void initXrInstance();
         void initGetXrSystem();
@@ -53,7 +58,7 @@ namespace OZZ {
         void renderEye(Swapchain* swapchain, const std::vector<std::unique_ptr<SwapchainImage>>& images,
                                  XrView view, VkDevice device, VkQueue queue, VkRenderPass renderPass, EyeTarget eye);
 
-        void processXREvents();
+        bool processXREvents();
 
         VkCommandBuffer getCommandBufferForSubmission();
         static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -99,28 +104,30 @@ namespace OZZ {
          * Both
          * - Both
          */
-        std::vector<FrameCommandBufferCache> frameCommandBufferCache {};
+        std::vector<std::shared_ptr<FrameCommandBufferCache>> frameCommandBufferCache {};
         FrameCommandBufferCache* currentFrameBufferCache {nullptr};
 
         FrameCommandBufferCache* getAvailableFrameBufferCache(VkDevice vkDevice) {
             for (auto& cache : frameCommandBufferCache) {
-                if (cache.Available) {
-                    cache.Claim();
-                    return &cache;
+                if (cache->Available) {
+                    cache->Claim();
+                    return cache.get();
                 }
             }
             spdlog::trace("No available cache found");
 
             // No available cache found, create a new one
-            frameCommandBufferCache.emplace_back(vkDevice);
-            frameCommandBufferCache.back().Claim();
+            auto& newCache = frameCommandBufferCache.emplace_back(
+                    std::make_shared<FrameCommandBufferCache>(vkDevice, commandPool));
+            newCache->Claim();
 
             if (frameCommandBufferCache.size() > 5) {
                 spdlog::warn("Frame command buffer cache is getting large, performance could be suffering.");
             }
-            return &frameCommandBufferCache.back();
+            return newCache.get();
         }
 
-        std::unique_ptr<Shader> shader;
+        bool _pauseValidation { false };
+
     };
 } // namespace OZZ
