@@ -20,20 +20,13 @@ target_link_libraries(${PROJECT_NAME}
         spdlog
         VulkanMemoryAllocator
         glm
-    PRIVATE
         openxr_loader
+    PRIVATE
 )
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
         include/
-        ${Vulkan_INCLUDE_DIRS}
-        VulkanMemoryAllocator
-        glm
-    PRIVATE
-        openxr_loader
-    SYSTEM
-        spdlog
 )
 
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)

@@ -5,20 +5,14 @@ set(SOURCES
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        OZZ_VULKANX
-    SYSTEM
-        spdlog
-        openxr_loader
-)
-
+#
+#target_include_directories(${PROJECT_NAME}
+#
+#)
+#
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         OZZ_VULKANXR
-        spdlog
-        openxr_loader
 )
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED On)
