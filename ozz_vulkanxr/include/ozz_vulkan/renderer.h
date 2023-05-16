@@ -27,7 +27,6 @@ namespace OZZ {
 
         // Lifecycle functions
         void Init();
-        // Returns true if application should close
         bool Update();
         void BeginFrame();
         VkCommandBuffer RequestCommandBuffer(EyeTarget target);
@@ -51,12 +50,11 @@ namespace OZZ {
         void initXrSession();
         void initXrReferenceSpaces();
         void initXrSwapchains();
-        void createRenderPass();
         void createCommandPool();
         void createFrameData();
 
         void renderEye(Swapchain* swapchain, const std::vector<std::unique_ptr<SwapchainImage>>& images,
-                                 XrView view, VkDevice device, VkQueue queue, VkRenderPass renderPass, EyeTarget eye);
+                                 XrView view, VkDevice device, VkQueue queue, EyeTarget eye);
 
         bool processXREvents();
 
@@ -76,7 +74,6 @@ namespace OZZ {
         std::vector<XrSwapchainImageVulkan2KHR> swapchainImages[EYE_COUNT];
         std::vector<std::vector<std::unique_ptr<SwapchainImage>>> wrappedSwapchainImages{};
 
-        VkRenderPass renderPass;
         VkCommandPool commandPool;
 
         uint32_t vkQueueFamilyIndex;

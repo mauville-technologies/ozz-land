@@ -109,6 +109,10 @@ namespace OZZ {
             spdlog::error("Failed to create pipeline layout");
         }
 
+        VkPipelineRenderingCreateInfoKHR renderingCreateInfo { VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR };
+        renderingCreateInfo.colorAttachmentCount = 1;
+        renderingCreateInfo.pColorAttachmentFormats = &_config.SwapchainColorFormat;
+
         VkGraphicsPipelineCreateInfo pipelineInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
         pipelineInfo.stageCount = 2;
         pipelineInfo.pStages = shaderStages;
@@ -121,8 +125,9 @@ namespace OZZ {
         pipelineInfo.pDynamicState = &dynamicStateCreateInfo;
         pipelineInfo.pDepthStencilState = nullptr;
         pipelineInfo.layout = _pipelineLayout;
-        pipelineInfo.renderPass = _config.RenderPass;
+        pipelineInfo.renderPass = nullptr;
         pipelineInfo.subpass = 0;
+        pipelineInfo.pNext = &renderingCreateInfo;
 
         if (vkCreateGraphicsPipelines(_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_pipeline) != VK_SUCCESS) {
             spdlog::error("Failed to create graphics pipeline");

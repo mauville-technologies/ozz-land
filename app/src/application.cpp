@@ -44,10 +44,13 @@ void Application::Run() {
 
         auto commandBuffer = _renderer->RequestCommandBuffer(OZZ::EyeTarget::BOTH);
 
+        VkCommandBufferInheritanceRenderingInfo renderingInheritance { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO };
+        renderingInheritance.colorAttachmentCount = 1;
+        renderingInheritance.pColorAttachmentFormats = &_shader->GetConfiguration().SwapchainColorFormat;
+        renderingInheritance.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
         VkCommandBufferInheritanceInfo inheritanceInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO};
-        inheritanceInfo.renderPass = _shader->GetConfiguration().RenderPass;
-        inheritanceInfo.subpass = _shader->GetConfiguration().Subpass;
-        inheritanceInfo.pNext = nullptr;
+        inheritanceInfo.pNext = &renderingInheritance;
 
         VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;

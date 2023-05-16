@@ -28,7 +28,6 @@ namespace OZZ {
         initXrSession();
         initXrReferenceSpaces();
         initXrSwapchains();
-        createRenderPass();
         createCommandPool();
         createFrameData();
     }
@@ -106,7 +105,6 @@ namespace OZZ {
                     views[eye],
                     vkDevice,
                     vkQueue,
-                    renderPass,
                     static_cast<EyeTarget>(eye)
             );
         }
@@ -152,7 +150,7 @@ namespace OZZ {
     }
 
     void Renderer::renderEye(Swapchain* swapchain, const std::vector<std::unique_ptr<SwapchainImage>>& images,
-                   XrView view, VkDevice device, VkQueue queue, VkRenderPass renderPass, EyeTarget eye) {
+                   XrView view, VkDevice device, VkQueue queue, EyeTarget eye) {
 
         XrSwapchainImageAcquireInfo acquireInfo{XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
         uint32_t swapchainImageIndex;
@@ -187,16 +185,38 @@ namespace OZZ {
         VkClearValue clearValue{};
         clearValue.color = {0.2f, 0.2f, 0.2f, 1.0f};
 
-        VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        renderPassInfo.renderPass = renderPass;
-        renderPassInfo.framebuffer = image->framebuffer;
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = { static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height) };
-        renderPassInfo.clearValueCount = 1;
-        renderPassInfo.pClearValues = &clearValue;
+//        VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+//        renderPassInfo.renderPass = renderPass;
+//        renderPassInfo.framebuffer = image->framebuffer;
+//        renderPassInfo.renderArea.offset = {0, 0};
+//        renderPassInfo.renderArea.extent = { static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height) };
+//        renderPassInfo.clearValueCount = 1;
+//        renderPassInfo.pClearValues = &clearValue;
+//
+//        vkCmdBeginRenderPass(image->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
 
-        vkCmdBeginRenderPass(image->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        VkRenderingAttachmentInfoKHR color_attachment_info {
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+            .imageView = image->imageView,
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue = clearValue
+        };
+        VkRenderingInfo renderingInfo {
+            .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        };
 
+        renderingInfo.renderArea.offset = { 0, 0 };
+        renderingInfo.renderArea.extent = {
+                static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height)
+        };
+        renderingInfo.layerCount = 1;
+        renderingInfo.colorAttachmentCount = 1;
+        renderingInfo.pColorAttachments = &color_attachment_info;
+        renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
+
+        vkCmdBeginRendering(image->commandBuffer, &renderingInfo);
 
         // execute current frame buffer cache for current eye
         if (!currentFrameBufferCache) {
@@ -212,7 +232,8 @@ namespace OZZ {
         if (!bothBuffers.empty())
             vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());
 
-        vkCmdEndRenderPass(image->commandBuffer);
+//        vkCmdEndRenderPass(image->commandBuffer);
+        vkCmdEndRendering(image->commandBuffer);
 
         if (vkEndCommandBuffer(image->commandBuffer) != VK_SUCCESS) {
             spdlog::error("Failed to record command buffer");
@@ -268,11 +289,6 @@ namespace OZZ {
         if (commandPool != VK_NULL_HANDLE) {
             vkDestroyCommandPool(vkDevice, commandPool, nullptr);
             commandPool = VK_NULL_HANDLE;
-        }
-
-        if (renderPass != VK_NULL_HANDLE) {
-            vkDestroyRenderPass(vkDevice, renderPass, nullptr);
-            renderPass = VK_NULL_HANDLE;
         }
 
         // Destroy OpenXR Swapchains
@@ -360,7 +376,7 @@ namespace OZZ {
     }
 
     std::unique_ptr<Shader> Renderer::CreateShader(ShaderConfiguration &config) {
-        config.RenderPass = renderPass;
+        config.SwapchainColorFormat = static_cast<VkFormat>(swapchainColorFormat);
         return std::make_unique<Shader>(vkDevice, config);
     }
 
@@ -581,7 +597,15 @@ namespace OZZ {
 
         // Get device extensions and features
         spdlog::trace("Getting Vulkan Device Extensions and Features");
-        std::vector<const char *> deviceExtensions = {};
+        std::vector<const char *> deviceExtensions = {
+            VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+        };
+
+        VkPhysicalDeviceDynamicRenderingFeaturesKHR features {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+            .dynamicRendering = VK_TRUE
+        };
+
         VkPhysicalDeviceFeatures deviceFeatures{};
 
         VkDeviceCreateInfo deviceCreateInfo { VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
@@ -592,6 +616,7 @@ namespace OZZ {
         deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.empty() ? nullptr : deviceExtensions.data();
         deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+        deviceCreateInfo.pNext = &features;
 
         // create xr vulkan device
         spdlog::trace("Creating XR Vulkan Device");
@@ -799,42 +824,6 @@ namespace OZZ {
         }
     }
 
-    void Renderer::createRenderPass() {
-        VkAttachmentDescription colorAttachment{};
-        colorAttachment.format = static_cast<VkFormat>(swapchainColorFormat);
-        colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // Clear the framebuffer before rendering
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE; // Store the framebuffer after rendering
-        colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE; // We don't care about stencil
-        colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE; // We don't care about stencil
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // We don't care about initial layout
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // We want to present the image
-
-        VkAttachmentReference colorAttachmentRef{};
-        colorAttachmentRef.attachment = 0;
-        colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // We want to use the image as a color attachment
-
-        VkSubpassDescription subpass{};
-        subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS; // We want to use the pipeline for graphics
-        subpass.colorAttachmentCount = 1;
-        subpass.pColorAttachments = &colorAttachmentRef;
-
-        VkRenderPassCreateInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
-        renderPassInfo.attachmentCount = 1;
-        renderPassInfo.pAttachments = &colorAttachment;
-        renderPassInfo.subpassCount = 1;
-        renderPassInfo.pSubpasses = &subpass;
-
-        VkResult result = vkCreateRenderPass(vkDevice, &renderPassInfo, nullptr, &renderPass);
-        if (result != VK_SUCCESS) {
-            spdlog::error("Failed to create render pass {}", result);
-            throw std::runtime_error("Failed to create render pass");
-            return;
-        } else {
-            spdlog::trace("Created render pass");
-        }
-    }
-
     void Renderer::createCommandPool() {
         VkCommandPoolCreateInfo commandPoolCreateInfo{VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
         commandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -859,7 +848,6 @@ namespace OZZ {
                         vkDevice,
                         &swapchains[eye],
                         swapchainImages[eye][i],
-                        renderPass,
                         commandPool
                 );
             }

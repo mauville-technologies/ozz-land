@@ -17,6 +17,7 @@ add_library(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         Vulkan::Vulkan
+#        Vulkan::glslc
         spdlog
         VulkanMemoryAllocator
         glm

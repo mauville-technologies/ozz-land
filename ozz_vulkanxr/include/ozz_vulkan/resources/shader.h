@@ -8,8 +8,7 @@
 
 namespace OZZ {
     struct ShaderConfiguration {
-        VkRenderPass RenderPass { VK_NULL_HANDLE };
-        uint8_t Subpass { 0 };
+        VkFormat SwapchainColorFormat;
 
         std::filesystem::path VertexShaderPath;
         std::filesystem::path FragmentShaderPath;
@@ -22,7 +21,7 @@ namespace OZZ {
 
        void Bind(VkCommandBuffer commandBuffer);
 
-       const ShaderConfiguration& GetConfiguration() const { return _config; }
+       [[nodiscard]] const ShaderConfiguration& GetConfiguration() const { return _config; }
     private:
         void createPipeline();
 
