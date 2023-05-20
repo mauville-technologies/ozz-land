@@ -9,7 +9,7 @@ set(SOURCES
         src/renderer.cpp
         src/vma_implementation.cpp
         src/shader.cpp
-        src/buffer.cpp)
+        src/buffer.cpp include/ozz_vulkan/brushes/shapes.h)
 
 
 add_library(${PROJECT_NAME} ${SOURCES})

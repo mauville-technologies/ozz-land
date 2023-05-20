@@ -49,6 +49,7 @@ OZZ::IndexBuffer::IndexBuffer(VmaAllocator allocator, const std::vector<uint32_t
     vmaCreateBuffer(allocator, &bufferCreateInfo, &allocationCreateInfo, &_buffer, &_allocation, nullptr);
     _size = bufferCreateInfo.size;
 
+
     void* data;
     vmaMapMemory(allocator, _allocation, &data);
     memcpy(data, indices.data(), _size);
