@@ -38,6 +38,7 @@ namespace OZZ {
         // Resource functions
         std::unique_ptr<Shader> CreateShader(ShaderConfiguration& config);
         std::unique_ptr<VertexBuffer> CreateVertexBuffer(const std::vector<Vertex>& vertices);
+        std::unique_ptr<IndexBuffer> CreateIndexBuffer(const std::vector<uint32_t>& indices);
 
         [[nodiscard]] std::tuple<int, int> GetSwapchainSize() const { return std::make_tuple(swapchains[0].width, swapchains[0].height); }
     private:

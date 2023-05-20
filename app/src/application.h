@@ -19,8 +19,8 @@ private:
     std::unique_ptr<OZZ::Renderer> _renderer;
     bool _isRunning {false};
 
-
     // Temporary
     std::unique_ptr<OZZ::Shader> _shader;
     std::unique_ptr<OZZ::VertexBuffer> _vertexBuffer;
+    std::unique_ptr<OZZ::IndexBuffer> _indexBuffer;
 };

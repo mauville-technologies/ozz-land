@@ -22,12 +22,15 @@ Application::Application() {
         {{-0.5f, 0.5f, 0.0f},  {1.0f, 1.0f, 0.0f}},
         {{0.5f, 0.5f, 0.0f},   {0.0f, 1.0f, 1.0f}}
     });
+
+    _indexBuffer = _renderer->CreateIndexBuffer({0, 1, 2});
 }
 
 Application::~Application() {
     _renderer->WaitIdle();
     _shader.reset(nullptr);
     _vertexBuffer.reset(nullptr);
+    _indexBuffer.reset(nullptr);
     _renderer.reset(nullptr);
 }
 
@@ -76,7 +79,10 @@ void Application::Run() {
 
         _shader->Bind(commandBuffer);
         _vertexBuffer->Bind(commandBuffer);
-        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+        _indexBuffer->Bind(commandBuffer);
+
+        vkCmdDrawIndexed(commandBuffer, _indexBuffer->GetIndexCount(), 1, 0, 0, 0);
+
         vkEndCommandBuffer(commandBuffer);
 
         _renderer->RenderFrame();

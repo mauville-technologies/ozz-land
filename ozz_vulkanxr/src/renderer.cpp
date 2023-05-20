@@ -384,6 +384,10 @@ namespace OZZ {
         return std::make_unique<VertexBuffer>(vmaAllocator, vertices);
     }
 
+    std::unique_ptr<IndexBuffer> Renderer::CreateIndexBuffer(const std::vector<uint32_t> &indices) {
+        return std::make_unique<IndexBuffer>(vmaAllocator, indices);
+    }
+
     void Renderer::initXrInstance() {
         spdlog::trace("Creating OpenXR Instance.");
 
@@ -437,8 +441,8 @@ namespace OZZ {
         spdlog::trace("Vulkan Max API Version {}", graphicsRequirements.maxApiVersionSupported);
 
         // Get validation layers
-        std::vector<const char *> validationLayers;
-#if !defined(NDEBUG)
+        std::vector<const char *> vulkanInstanceLayers;
+
         uint32_t layerCount;
         vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
         std::vector<VkLayerProperties> availableLayers(layerCount);
@@ -450,25 +454,24 @@ namespace OZZ {
         }
 
         std::vector<const char *> desiredLayers;
+        desiredLayers.push_back("VK_LAYER_KHRONOS_shader_object");
+#if !defined(NDEBUG)
         desiredLayers.push_back("VK_LAYER_KHRONOS_validation");
-        desiredLayers.push_back("VK_LAYER_LUNARG_standard_validation");
+#endif
 
-        // enable only one validation layer from the list above. Prefer KHRONOS over LUNARG
         for (const auto &desiredLayer: desiredLayers) {
             for (const auto &availableLayer: availableLayers) {
                 if (strcmp(desiredLayer, availableLayer.layerName) == 0) {
-                    validationLayers.push_back(desiredLayer);
-                    break;
+                    vulkanInstanceLayers.push_back(desiredLayer);
                 }
             }
         }
 
         // print selected validation layers
-        spdlog::trace("Selected Vulkan Validation Layers:");
-        for (const auto &layer: validationLayers) {
+        spdlog::trace("Selected Vulkan Instance Layers:");
+        for (const auto &layer: vulkanInstanceLayers) {
             spdlog::trace("{}", layer);
         }
-#endif
 
         // get vulkan instance extensions
         std::vector<const char *> vulkanInstanceExtensions;
@@ -499,15 +502,15 @@ namespace OZZ {
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.apiVersion = VK_API_VERSION_1_3;
 
-        VkInstanceCreateInfo instanceCreateInfo{VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
+        VkInstanceCreateInfo instanceCreateInfo{ VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
         instanceCreateInfo.pApplicationInfo = &appInfo;
         instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(vulkanInstanceExtensions.size());
         instanceCreateInfo.ppEnabledExtensionNames = vulkanInstanceExtensions.empty() ? nullptr
                                                                                       : vulkanInstanceExtensions.data();
-        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-        instanceCreateInfo.ppEnabledLayerNames = validationLayers.empty() ? nullptr : validationLayers.data();
+        instanceCreateInfo.enabledLayerCount = static_cast<uint32_t>(vulkanInstanceLayers.size());
+        instanceCreateInfo.ppEnabledLayerNames = vulkanInstanceLayers.empty() ? nullptr : vulkanInstanceLayers.data();
 
-        XrVulkanInstanceCreateInfoKHR xrVulkanInstanceCreateInfoKhr{XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR};
+        XrVulkanInstanceCreateInfoKHR xrVulkanInstanceCreateInfoKhr{ XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR };
         xrVulkanInstanceCreateInfoKhr.systemId = xrSystemId;
         xrVulkanInstanceCreateInfoKhr.pfnGetInstanceProcAddr = &vkGetInstanceProcAddr;
         xrVulkanInstanceCreateInfoKhr.vulkanCreateInfo = &instanceCreateInfo;
