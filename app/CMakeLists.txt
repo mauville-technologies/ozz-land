@@ -1,7 +1,7 @@
 set(SOURCES
         src/main.cpp
         src/application.cpp
-        )
+        src/cube.cpp)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})

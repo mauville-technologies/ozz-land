@@ -21,8 +21,8 @@ namespace OZZ {
                 spdlog::error("Failed to create fences");
             }
 
-            CommandBuffers[EyeTarget::LEFT] = {};
-            CommandBuffers[EyeTarget::RIGHT] = {};
+            CommandBuffers[EyeTarget::Left] = {};
+            CommandBuffers[EyeTarget::Right] = {};
             CommandBuffers[EyeTarget::BOTH] = {};
         }
 
@@ -60,7 +60,7 @@ namespace OZZ {
         }
 
         const auto& GetFence(EyeTarget target) const {
-            if (target == EyeTarget::LEFT) {
+            if (target == EyeTarget::Left) {
                 return leftEyeFence;
             } else {
                 return rightEyeFence;
@@ -78,20 +78,20 @@ namespace OZZ {
         bool Available {true};
     private:
         void clearCommandBuffers() {
-            if (!CommandBuffers[OZZ::EyeTarget::LEFT].empty())
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::LEFT].size(),
-                                     CommandBuffers[OZZ::EyeTarget::LEFT].data());
+            if (!CommandBuffers[OZZ::EyeTarget::Left].empty())
+                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::Left].size(),
+                                     CommandBuffers[OZZ::EyeTarget::Left].data());
 
-            if (!CommandBuffers[OZZ::EyeTarget::RIGHT].empty())
-                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::RIGHT].size(),
-                                     CommandBuffers[OZZ::EyeTarget::RIGHT].data());
+            if (!CommandBuffers[OZZ::EyeTarget::Right].empty())
+                vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::Right].size(),
+                                     CommandBuffers[OZZ::EyeTarget::Right].data());
 
             if (!CommandBuffers[OZZ::EyeTarget::BOTH].empty())
                 vkFreeCommandBuffers(vkDevice, commandPool, CommandBuffers[OZZ::EyeTarget::BOTH].size(),
                                      CommandBuffers[OZZ::EyeTarget::BOTH].data());
 
-            CommandBuffers[OZZ::EyeTarget::LEFT].clear();
-            CommandBuffers[OZZ::EyeTarget::RIGHT].clear();
+            CommandBuffers[OZZ::EyeTarget::Left].clear();
+            CommandBuffers[OZZ::EyeTarget::Right].clear();
             CommandBuffers[OZZ::EyeTarget::BOTH].clear();
         }
     private:

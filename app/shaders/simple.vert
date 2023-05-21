@@ -7,7 +7,13 @@ layout(location = 3) in vec3 normal;
 
 layout(location = 0) out vec3 fragColor;
 
+layout( push_constant ) uniform constants {
+    mat4 Model;
+    mat4 View;
+    mat4 Projection;
+} PushConstants;
+
 void main() {
-    gl_Position = vec4(position, 1.0);
+    gl_Position = PushConstants.Model * vec4(position, 1.0);
     fragColor = color;
 }

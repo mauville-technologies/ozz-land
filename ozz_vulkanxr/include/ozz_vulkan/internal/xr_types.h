@@ -7,8 +7,8 @@
 namespace OZZ {
 
     enum class EyeTarget {
-        LEFT,
-        RIGHT,
+        Left,
+        Right,
         BOTH,
     };
 

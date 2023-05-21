@@ -4,6 +4,7 @@
 #pragma once
 
 #include <ozz_vulkan/internal/graphics_includes.h>
+#include <ozz_vulkan/resources/push_constants.h>
 #include <filesystem>
 
 namespace OZZ {
@@ -12,6 +13,8 @@ namespace OZZ {
 
         std::filesystem::path VertexShaderPath;
         std::filesystem::path FragmentShaderPath;
+
+        std::vector<PushConstantDefinition> PushConstants;
     };
 
     class Shader {
@@ -21,8 +24,15 @@ namespace OZZ {
 
        void Bind(VkCommandBuffer commandBuffer);
 
+       template <typename T>
+       void YeetPushConstants(VkCommandBuffer commandBuffer, T constants, VkShaderStageFlags shaderFlags, uint32_t offset = 0) {
+          vkCmdPushConstants(commandBuffer, _pipelineLayout, shaderFlags, offset, sizeof(T), &constants);
+       }
+
        [[nodiscard]] const ShaderConfiguration& GetConfiguration() const { return _config; }
     private:
+        void recreatePipeline();
+        void destroyPipeline();
         void createPipeline();
 
     private:

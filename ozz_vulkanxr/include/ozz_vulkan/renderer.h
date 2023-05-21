@@ -41,6 +41,7 @@ namespace OZZ {
         std::unique_ptr<IndexBuffer> CreateIndexBuffer(const std::vector<uint32_t>& indices);
 
         [[nodiscard]] std::tuple<int, int> GetSwapchainSize() const { return std::make_tuple(swapchains[0].width, swapchains[0].height); }
+        [[nodiscard]] VkFormat GetSwapchainFormat() const { return static_cast<VkFormat>(swapchainColorFormat); }
     private:
         void initXrInstance();
         void initGetXrSystem();

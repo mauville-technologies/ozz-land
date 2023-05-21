@@ -22,9 +22,6 @@ int main(int argc, char** argv) {
 
     application->Stop();
     appThread.join();
+    application.reset(nullptr);
     spdlog::info("Application exited");
-
-    return 0;
 }
-
-

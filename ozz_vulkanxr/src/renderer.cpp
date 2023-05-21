@@ -185,16 +185,6 @@ namespace OZZ {
         VkClearValue clearValue{};
         clearValue.color = {0.2f, 0.2f, 0.2f, 1.0f};
 
-//        VkRenderPassBeginInfo renderPassInfo{VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-//        renderPassInfo.renderPass = renderPass;
-//        renderPassInfo.framebuffer = image->framebuffer;
-//        renderPassInfo.renderArea.offset = {0, 0};
-//        renderPassInfo.renderArea.extent = { static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height) };
-//        renderPassInfo.clearValueCount = 1;
-//        renderPassInfo.pClearValues = &clearValue;
-//
-//        vkCmdBeginRenderPass(image->commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
         VkRenderingAttachmentInfoKHR color_attachment_info {
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
             .imageView = image->imageView,
@@ -232,7 +222,6 @@ namespace OZZ {
         if (!bothBuffers.empty())
             vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());
 
-//        vkCmdEndRenderPass(image->commandBuffer);
         vkCmdEndRendering(image->commandBuffer);
 
         if (vkEndCommandBuffer(image->commandBuffer) != VK_SUCCESS) {
@@ -370,6 +359,7 @@ namespace OZZ {
                 spdlog::trace("Destroyed OpenXR Instance.");
             });
             t.detach();
+            spdlog::trace("Detached OpenXR Instance Destroyer Thread.");
 
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }

@@ -35,6 +35,14 @@ namespace OZZ {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
     }
 
+    void Shader::recreatePipeline() {
+
+    }
+
+    void Shader::destroyPipeline() {
+
+    }
+
     void Shader::createPipeline() {
         auto vertShaderCode = readFile(_config.VertexShaderPath);
         auto fragShaderCode = readFile(_config.FragmentShaderPath);
@@ -103,7 +111,16 @@ namespace OZZ {
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         pipelineLayoutInfo.setLayoutCount = 0;
-        pipelineLayoutInfo.pushConstantRangeCount = 0;
+        pipelineLayoutInfo.pushConstantRangeCount = _config.PushConstants.size();
+        pipelineLayoutInfo.pPushConstantRanges = nullptr;
+
+        std::vector<VkPushConstantRange> pushConstants;
+        if (!_config.PushConstants.empty()) {
+            for (auto& pushConstant : _config.PushConstants) {
+                pushConstants.emplace_back(pushConstant.GetRange());
+            }
+            pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
+        }
 
         if (vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout) != VK_SUCCESS) {
             spdlog::error("Failed to create pipeline layout");
