@@ -1,7 +1,6 @@
 //
 // Created by ozzadar on 08/05/23.
 //
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 
 #include "application.h"
@@ -16,7 +15,7 @@ Application::Application() {
     // Create cube
     _cube = std::make_unique<Cube>(_renderer.get());
     _cube2 = std::make_unique<Cube>(_renderer.get());
-    _cube2->Translate(glm::vec3(0.0f, 0.0f, -5.0f));
+    _cube2->Translate(glm::vec3(1.f, 0.0f, -5.0f));
     _cube2->Rotate(90.0f, glm::vec3(0.0f, 1.0f, 0.0f));
 }
 

@@ -15,11 +15,11 @@ set(SOURCES
 
 add_library(${PROJECT_NAME} ${SOURCES})
 
-#target_compile_definitions(${PROJECT_NAME} PUBLIC
-#        GLM_FORCE_DEPTH_ZERO_TO_ONE
-#        GLM_FORCE_RADIANS
-#)
-#
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+        GLM_FORCE_DEPTH_ZERO_TO_ONE
+        GLM_FORCE_RADIANS
+)
+
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         Vulkan::Vulkan
