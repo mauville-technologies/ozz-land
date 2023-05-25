@@ -66,5 +66,5 @@ void Cube::createShader(OZZ::Renderer *renderer) {
 }
 
 void Cube::updateModelMatrix() {
-    _modelMatrix = glm::mat4_cast(_rotation);
+    _modelMatrix = glm::translate(glm::mat4{1.f}, _translation) * glm::mat4_cast(_rotation);
 }

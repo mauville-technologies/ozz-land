@@ -19,6 +19,10 @@ public:
         updateModelMatrix();
     }
 
+    void Translate(glm::vec3 translation) {
+        _translation += translation;
+        updateModelMatrix();
+    }
 private:
     void createVertexBuffer(OZZ::Renderer* renderer);
     void createIndexBuffer(OZZ::Renderer* renderer);
@@ -32,4 +36,5 @@ private:
 
     glm::mat4 _modelMatrix { 1.0f };
     glm::quat _rotation { 1.0f, 0.0f, 0.0f, 0.0f };
+    glm::vec3 _translation { 0.0f, 0.0f, 0.0f };
 };

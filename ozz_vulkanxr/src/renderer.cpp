@@ -182,8 +182,12 @@ namespace OZZ {
             return;
         }
 
-        VkClearValue clearValue{};
-        clearValue.color = {0.2f, 0.2f, 0.2f, 1.0f};
+        VkClearValue colorClear{};
+        colorClear.color = {0.2f, 0.2f, 0.2f, 1.0f};
+
+        VkClearValue depthClear{};
+        depthClear.color = {0.2f, 0.2f, 0.2f, 1.0f};
+        depthClear.depthStencil = {0.32f, 0};
 
         VkRenderingAttachmentInfoKHR color_attachment_info {
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
@@ -191,19 +195,32 @@ namespace OZZ {
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue = clearValue
+            .clearValue = colorClear
         };
+
+        VkRenderingAttachmentInfoKHR depth_attachment_info {
+            .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
+            .imageView = image->depthImageView,
+            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .resolveMode = VK_RESOLVE_MODE_NONE,
+            .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue = depthClear
+        };
+
         VkRenderingInfo renderingInfo {
             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
         };
 
         renderingInfo.renderArea.offset = { 0, 0 };
+
         renderingInfo.renderArea.extent = {
                 static_cast<uint32_t>(swapchain->width), static_cast<uint32_t>(swapchain->height)
         };
         renderingInfo.layerCount = 1;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &color_attachment_info;
+        renderingInfo.pDepthAttachment = &depth_attachment_info;
         renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
 
         vkCmdBeginRendering(image->commandBuffer, &renderingInfo);
@@ -834,14 +851,20 @@ namespace OZZ {
 
     void Renderer::createFrameData() {
         wrappedSwapchainImages.resize(EYE_COUNT);
+
+        VkFormat depthFormat = findDepthFormat(vkPhysicalDevice);
+
+        spdlog::info("Selected Depth Format: {}", depthFormat);
         for (auto eye = 0; eye < EYE_COUNT; eye++) {
             wrappedSwapchainImages[eye] = std::vector<std::unique_ptr<SwapchainImage>> {swapchainImages[eye].size() };
             for (auto i = 0; i < swapchainImages[eye].size(); i++) {
                 wrappedSwapchainImages[eye][i] = std::make_unique<SwapchainImage> (
                         vkDevice,
+                        vmaAllocator,
                         &swapchains[eye],
                         swapchainImages[eye][i],
-                        commandPool
+                        commandPool,
+                        vkQueue
                 );
             }
         }

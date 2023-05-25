@@ -14,6 +14,6 @@ layout( push_constant ) uniform constants {
 } PushConstants;
 
 void main() {
-    gl_Position = PushConstants.Model * vec4(position, 1.0);
-    fragColor = color;
+    gl_Position = PushConstants.Projection * PushConstants.View * PushConstants.Model * vec4(position, 1.0);
+    fragColor = vec3(gl_Position.z, 0, 0);
 }

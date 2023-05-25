@@ -26,5 +26,6 @@ private:
     bool _isRunning {false};
 
     std::unique_ptr<Cube> _cube;
+    std::unique_ptr<Cube> _cube2;
 
 };
