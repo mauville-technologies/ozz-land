@@ -183,11 +183,10 @@ namespace OZZ {
         }
 
         VkClearValue colorClear{};
-        colorClear.color = {0.2f, 0.2f, 0.2f, 1.0f};
+        colorClear.color = { 0.2f, 0.2f, 0.2f, 1.0f};
 
         VkClearValue depthClear{};
-        depthClear.color = {0.2f, 0.2f, 0.2f, 1.0f};
-        depthClear.depthStencil = {0.32f, 0};
+        depthClear.depthStencil = {1.f, 0};
 
         VkRenderingAttachmentInfoKHR color_attachment_info {
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
@@ -221,6 +220,7 @@ namespace OZZ {
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &color_attachment_info;
         renderingInfo.pDepthAttachment = &depth_attachment_info;
+
         renderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR;
 
         vkCmdBeginRendering(image->commandBuffer, &renderingInfo);
@@ -233,8 +233,9 @@ namespace OZZ {
         auto& eyeBuffers = currentFrameBufferCache->GetCommandBuffers(eye);
         auto& bothBuffers = currentFrameBufferCache->GetCommandBuffers(EyeTarget::BOTH);
 
-        if (!eyeBuffers.empty())
+        if (!eyeBuffers.empty()) {
             vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(eyeBuffers.size()), eyeBuffers.data());
+        }
 
         if (!bothBuffers.empty())
             vkCmdExecuteCommands(image->commandBuffer, static_cast<uint32_t>(bothBuffers.size()), bothBuffers.data());

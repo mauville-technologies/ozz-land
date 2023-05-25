@@ -50,13 +50,17 @@ namespace OZZ {
             imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
             imageViewCreateInfo.subresourceRange.layerCount = 1;
 
+            VkExtent3D depthImageExtent {
+                    .width = static_cast<uint32_t>(swapchain->width),
+                    .height = static_cast<uint32_t>(swapchain->height),
+                    .depth = 1
+            };
+
             // Create depth stencil image
             VkImageCreateInfo depthImageCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
             depthImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
             depthImageCreateInfo.format = VK_FORMAT_D32_SFLOAT;
-            depthImageCreateInfo.extent.width = swapchain->width;
-            depthImageCreateInfo.extent.height = swapchain->height;
-            depthImageCreateInfo.extent.depth = 1;
+            depthImageCreateInfo.extent = depthImageExtent;
             depthImageCreateInfo.mipLevels = 1;
             depthImageCreateInfo.arrayLayers = 1;
             depthImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -72,15 +76,19 @@ namespace OZZ {
                 spdlog::error("Failed to create depth image");
             }
 
-            VkImageViewCreateInfo depthImageViewCreateInfo{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-            depthImageViewCreateInfo.image = depthImage;
-            depthImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            depthImageViewCreateInfo.format = VK_FORMAT_D32_SFLOAT;
-            depthImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            depthImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-            depthImageViewCreateInfo.subresourceRange.levelCount = 1;
-            depthImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-            depthImageViewCreateInfo.subresourceRange.layerCount = 1;
+            VkImageViewCreateInfo depthImageViewCreateInfo {
+                    .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                    .image = depthImage,
+                    .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                    .format = VK_FORMAT_D32_SFLOAT,
+                    .subresourceRange = {
+                            .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                            .baseMipLevel = 0,
+                            .levelCount = 1,
+                            .baseArrayLayer = 0,
+                            .layerCount = 1,
+                    }
+            };
 
             if (vkCreateImageView(device, &depthImageViewCreateInfo, nullptr, &depthImageView) != VK_SUCCESS) {
                 spdlog::error("Failed to create depth image view");

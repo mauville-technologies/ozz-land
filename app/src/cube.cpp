@@ -7,8 +7,7 @@
 
 struct ShaderMatrices {
     glm::mat4 Model;
-    glm::mat4 View;
-    glm::mat4 Projection;
+    glm::mat4 VP;
 };
 
 Cube::Cube(OZZ::Renderer* renderer) {
@@ -31,8 +30,7 @@ void Cube::Draw(VkCommandBuffer commandBuffer, glm::mat4 view, glm::mat4 project
     _shader->Bind(commandBuffer);
     _shader->YeetPushConstants<ShaderMatrices>(commandBuffer, ShaderMatrices {
             .Model = _modelMatrix,
-            .View = view,
-            .Projection = projection
+            .VP = projection * view
     }, VK_SHADER_STAGE_VERTEX_BIT);
 
     _indexBuffer->Bind(commandBuffer);

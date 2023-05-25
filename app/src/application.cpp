@@ -71,6 +71,15 @@ void Application::renderEye(OZZ::EyeTarget eye) {
     inheritanceInfo.pNext = &renderingInheritance;
 
     // Record command buffers
+
+    VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT ;
+    beginInfo.pInheritanceInfo = &inheritanceInfo;
+    beginInfo.pNext = nullptr;
+
+    auto commandBuffer = _renderer->RequestCommandBuffer(eye);
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
     auto [width, height] = _renderer->GetSwapchainSize();
     VkViewport viewport = {
             0, 0,
@@ -83,18 +92,10 @@ void Application::renderEye(OZZ::EyeTarget eye) {
             {(uint32_t) width, (uint32_t) height}
     };
 
-    VkCommandBufferBeginInfo beginInfo{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-    beginInfo.pInheritanceInfo = &inheritanceInfo;
-    beginInfo.pNext = nullptr;
-
-    auto commandBuffer = _renderer->RequestCommandBuffer(eye);
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    auto projection = glm::perspective(glm::radians(45.0f), (float) width / (float) height, 0.1f, 100.0f);
+    auto projection = glm::perspectiveRH_ZO(glm::radians(45.0f), (float) width / (float) height, 0.1f, 15.0f);
     projection[1][1] *= -1;
 
     auto view = glm::lookAt(glm::vec3(0.0f, 0.0f, 10.0f), // Camera is at (0,0,3), in World Space

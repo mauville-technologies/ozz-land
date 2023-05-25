@@ -115,6 +115,8 @@ namespace OZZ {
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.stencilTestEnable = VK_FALSE;
+        depthStencil.minDepthBounds = 0.f;
+        depthStencil.maxDepthBounds = 1.f;
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         pipelineLayoutInfo.setLayoutCount = 0;
@@ -136,8 +138,6 @@ namespace OZZ {
         VkPipelineRenderingCreateInfoKHR renderingCreateInfo { VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR };
         renderingCreateInfo.colorAttachmentCount = 1;
         renderingCreateInfo.pColorAttachmentFormats = &_config.SwapchainColorFormat;
-
-
 
         VkGraphicsPipelineCreateInfo pipelineInfo{VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
         pipelineInfo.stageCount = 2;

@@ -10,7 +10,7 @@ set(SOURCES
         src/vma_implementation.cpp
         src/shader.cpp
         src/buffer.cpp
-)
+        )
 
 
 add_library(${PROJECT_NAME} ${SOURCES})
