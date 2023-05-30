@@ -1,16 +1,11 @@
 set(SOURCES
         src/main.cpp
         src/application.cpp
-        src/cube.cpp)
+        src/cube.cpp src/camera_object.cpp)
 
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 add_dependencies(${PROJECT_NAME} COPY_ASSETS)
-#
-#target_include_directories(${PROJECT_NAME}
-#
-#)
-#
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
@@ -20,7 +15,6 @@ target_link_libraries(${PROJECT_NAME}
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 20)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD_REQUIRED On)
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_EXTENSIONS Off)
-
 
 # Get all shader files
 file(GLOB SHADERS shaders/*.vert shaders/*.frag)

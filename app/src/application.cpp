@@ -12,6 +12,10 @@ Application::Application() {
     _renderer = std::make_unique<OZZ::Renderer>();
     _renderer->Init();
 
+    // Create the camera
+    _cameraObject = std::make_unique<CameraObject>();
+    _cameraObject->Translate(glm::vec3(0.0f, 0.0f, 3.0f));
+
     // Create cube
     _cube = std::make_unique<Cube>(_renderer.get());
     _cube2 = std::make_unique<Cube>(_renderer.get());
@@ -46,8 +50,15 @@ void Application::Stop() {
 }
 
 void Application::update() {
+    auto moveX = std::cos(_frameCount / 100.0f) * 0.1f;
+    auto moveZ = std::sin(_frameCount / 100.0f) * 0.1f;
+
+    _cameraObject->Translate(glm::vec3(moveX, 0, moveZ));
+
     _cube->Update(0);
     _cube2->Update(0);
+
+    _frameCount++;
 }
 
 void Application::renderFrame() {
@@ -99,10 +110,7 @@ void Application::renderEye(OZZ::EyeTarget eye, const OZZ::EyePoseInfo& eyePoseI
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    auto view = glm::lookAt(glm::vec3(0.0f, 0.0f, 10.0f), // Camera is at (0,0,3), in World Space
-                            glm::vec3(0.0f, 0.0f, 0.0f), // and looks at the origin
-                            glm::vec3(0.0f, 1.0f, 0.0f)  // Head is up (set to 0,-1,0 to look upside-down)
-    );
+    auto view = _cameraObject->GetViewMatrix();
 
     auto projection = eyePoseInfo.GetProjectionMatrix();
     _cube->Draw(commandBuffer, view, projection);

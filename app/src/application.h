@@ -7,6 +7,7 @@
 #include <ozz_vulkan/renderer.h>
 #include <memory>
 #include "cube.h"
+#include "camera_object.h"
 
 class Application {
 public:
@@ -27,5 +28,7 @@ private:
 
     std::unique_ptr<Cube> _cube;
     std::unique_ptr<Cube> _cube2;
+    std::unique_ptr<CameraObject> _cameraObject;
 
+    uint64_t _frameCount {0};
 };
