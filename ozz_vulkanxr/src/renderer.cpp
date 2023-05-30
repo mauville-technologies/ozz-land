@@ -36,9 +36,28 @@ namespace OZZ {
         return processXREvents();
     }
 
-    void Renderer::BeginFrame() {
+    std::optional<FrameInfo> Renderer::BeginFrame() {
         // Get available frame cache
         currentFrameBufferCache = getAvailableFrameBufferCache(vkDevice);
+        if (!xrSessionInitialized) return std::nullopt;
+
+        XrFrameWaitInfo frameWaitInfo{XR_TYPE_FRAME_WAIT_INFO};
+
+        XrFrameState frameState{XR_TYPE_FRAME_STATE};
+        XrResult result = xrWaitFrame(xrSession, &frameWaitInfo, &frameState);
+
+        if (result != XR_SUCCESS) {
+            spdlog::error("Failed to wait for frame {}", result);
+            return std::nullopt;
+        }
+
+        if (!frameState.shouldRender) {
+            return std::nullopt;
+        }
+
+        return FrameInfo {
+            .PredictedDisplayTime = frameState.predictedDisplayTime
+        };
     }
 
     VkCommandBuffer Renderer::RequestCommandBuffer(EyeTarget target) {
@@ -52,7 +71,7 @@ namespace OZZ {
         return newBuffer;
     }
 
-    void Renderer::RenderFrame() {
+    void Renderer::RenderFrame(const FrameInfo& frameInfo) {
         // Clean and check framebuffer caches
         for (auto& cache : frameCommandBufferCache) {
             cache->CheckAndClearCaches();
@@ -60,41 +79,11 @@ namespace OZZ {
 
         if (!xrSessionInitialized) return;
 
-        XrFrameWaitInfo frameWaitInfo{XR_TYPE_FRAME_WAIT_INFO};
-
-        XrFrameState frameState{XR_TYPE_FRAME_STATE};
-        XrResult result = xrWaitFrame(xrSession, &frameWaitInfo, &frameState);
-
-        if (result != XR_SUCCESS) {
-            spdlog::error("Failed to wait for frame {}", result);
-            return;
-        }
-
-        if (!frameState.shouldRender) {
-            return;
-        }
-
         XrFrameBeginInfo frameBeginInfo{XR_TYPE_FRAME_BEGIN_INFO};
-        result = xrBeginFrame(xrSession, &frameBeginInfo);
+        auto result = xrBeginFrame(xrSession, &frameBeginInfo);
 
         if (result != XR_SUCCESS) {
             spdlog::error("Failed to begin frame {}", result);
-            return;
-        }
-
-        XrViewLocateInfo viewLocateInfo{XR_TYPE_VIEW_LOCATE_INFO};
-        viewLocateInfo.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-        viewLocateInfo.displayTime = frameState.predictedDisplayTime;
-        viewLocateInfo.space = xrApplicationSpace;
-
-        XrViewState viewState{XR_TYPE_VIEW_STATE};
-        uint32_t viewCount = EYE_COUNT;
-        std::vector<XrView> views(viewCount, {XR_TYPE_VIEW});
-
-        result = xrLocateViews(xrSession, &viewLocateInfo, &viewState, viewCount, &viewCount, views.data());
-
-        if (result != XR_SUCCESS) {
-            spdlog::error("Failed to locate views {}", result);
             return;
         }
 
@@ -102,14 +91,29 @@ namespace OZZ {
             renderEye(
                     &swapchains[eye],
                     wrappedSwapchainImages[eye],
-                    views[eye],
-                    vkDevice,
                     vkQueue,
                     static_cast<EyeTarget>(eye)
             );
         }
 
         XrCompositionLayerProjectionView projectionLayerViews[EYE_COUNT] = {};
+
+        auto [leftEye, rightEye] = GetEyePoseInfo(frameInfo.PredictedDisplayTime).value();
+
+        std::vector <XrView> views = {
+                {
+                        .type = XR_TYPE_VIEW,
+                        .next = nullptr,
+                        .pose = getPoseFromEyePose(leftEye),
+                        .fov = getFovFromEyeFov(leftEye)
+                },
+                {
+                        .type = XR_TYPE_VIEW,
+                        .next = nullptr,
+                        .pose = getPoseFromEyePose(rightEye),
+                        .fov = getFovFromEyeFov(rightEye)
+                }
+        };
 
         for (auto eye = 0; eye < EYE_COUNT; eye++) {
             projectionLayerViews[eye].type = XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
@@ -128,7 +132,7 @@ namespace OZZ {
         auto pLayer = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&projectionLayer);
 
         XrFrameEndInfo frameEndInfo{XR_TYPE_FRAME_END_INFO};
-        frameEndInfo.displayTime = frameState.predictedDisplayTime;
+        frameEndInfo.displayTime = frameInfo.PredictedDisplayTime;
         frameEndInfo.environmentBlendMode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
         frameEndInfo.layerCount = 1;
         frameEndInfo.layers = &pLayer;
@@ -150,7 +154,7 @@ namespace OZZ {
     }
 
     void Renderer::renderEye(Swapchain* swapchain, const std::vector<std::unique_ptr<SwapchainImage>>& images,
-                   XrView view, VkDevice device, VkQueue queue, EyeTarget eye) {
+                   VkQueue queue, EyeTarget eye) {
 
         XrSwapchainImageAcquireInfo acquireInfo{XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO};
         uint32_t swapchainImageIndex;
@@ -381,6 +385,39 @@ namespace OZZ {
 
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         }
+    }
+
+    std::optional<std::tuple<EyePoseInfo, EyePoseInfo>> Renderer::GetEyePoseInfo(int64_t predictedDisplayTime) const {
+
+        XrViewLocateInfo viewLocateInfo{XR_TYPE_VIEW_LOCATE_INFO};
+        viewLocateInfo.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
+        viewLocateInfo.displayTime = predictedDisplayTime;
+        viewLocateInfo.space = xrApplicationSpace;
+
+        XrViewState viewState{XR_TYPE_VIEW_STATE};
+        uint32_t viewCount = EYE_COUNT;
+        std::vector<XrView> views(viewCount, {XR_TYPE_VIEW});
+
+        auto result = xrLocateViews(xrSession, &viewLocateInfo, &viewState, viewCount, &viewCount, views.data());
+
+        if (result != XR_SUCCESS) {
+            spdlog::error("Failed to locate views {}", result);
+            return std::nullopt;
+        }
+
+        // Build Eye Pose Info
+        EyePoseInfo leftEyePoseInfo = {
+                .FOV = {views[0].fov.angleDown, views[0].fov.angleLeft, views[0].fov.angleRight, views[0].fov.angleUp},
+                .Orientation = glm::quat{views[0].pose.orientation.w, views[0].pose.orientation.x, views[0].pose.orientation.y, views[0].pose.orientation.z},
+                .Position = { views[0].pose.position.x, views[0].pose.position.y, views[0].pose.position.z }
+        };
+        EyePoseInfo rightEyePoseInfo = {
+                .FOV = {views[1].fov.angleDown, views[1].fov.angleLeft, views[1].fov.angleRight, views[1].fov.angleUp},
+                .Orientation = glm::quat{views[1].pose.orientation.w, views[1].pose.orientation.x, views[1].pose.orientation.y, views[1].pose.orientation.z},
+                .Position = { views[1].pose.position.x, views[1].pose.position.y, views[1].pose.position.z }
+        };
+
+        return std::tuple{ leftEyePoseInfo, rightEyePoseInfo };
     }
 
     std::unique_ptr<Shader> Renderer::CreateShader(ShaderConfiguration &config) {
@@ -758,8 +795,6 @@ namespace OZZ {
         } else {
             spdlog::trace("Got OpenXR View Configuration Views");
         }
-
-        views.resize(viewCount, {XR_TYPE_VIEW});
 
         // Create swapchains
         if (viewCount > 0) {

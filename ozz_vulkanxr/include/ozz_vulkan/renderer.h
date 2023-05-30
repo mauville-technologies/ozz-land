@@ -18,8 +18,67 @@
 #include <memory>
 #include <unordered_map>
 #include <tuple>
+#include <optional>
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace OZZ {
+    struct FieldOfView {
+        float AngleDown;
+        float AngleLeft;
+        float AngleRight;
+        float AngleUp;
+    };
+
+    struct EyePoseInfo {
+        FieldOfView FOV;
+        glm::quat Orientation;
+        glm::vec3 Position;
+
+        [[nodiscard]] glm::mat4 GetProjectionMatrix() const {
+
+            auto projection = glm::mat4{1.f};
+
+            const float nearZ = 0.1f;
+            const float farZ = 100.0f;
+
+            const float tanAngleLeft = tanf(FOV.AngleLeft);
+            const float tanAngleRight = tanf(FOV.AngleRight);
+            const float tanAngleUp = tanf(FOV.AngleUp);
+            const float tanAngleDown = tanf(FOV.AngleDown);
+
+            const float tanAngleWidth = tanAngleRight - tanAngleLeft;
+
+            const float tanAngleHeight = tanAngleDown - tanAngleUp;
+
+            projection[0][0] = 2.0f / tanAngleWidth;
+            projection[1][0] = 0.0f;
+            projection[2][0] = (tanAngleRight + tanAngleLeft) / tanAngleWidth;
+            projection[3][0] = 0.0f;
+
+            projection[0][1] = 0.0f;
+            projection[1][1] = 2.0f / tanAngleHeight;
+            projection[2][1] = (tanAngleUp + tanAngleDown) / tanAngleHeight;
+            projection[3][1] = 0.0f;
+
+            projection[0][2] = 0.0f;
+            projection[1][2] = 0.0f;
+            projection[2][2] = -farZ / (farZ - nearZ);
+            projection[3][2] = -(farZ * nearZ) / (farZ - nearZ);
+
+            projection[0][3] = 0.0f;
+            projection[1][3] = 0.0f;
+            projection[2][3] = -1.0f;
+            projection[3][3] = 0.0f;
+
+            return projection;
+        }
+    };
+
+    struct FrameInfo {
+       int64_t PredictedDisplayTime {0};
+    };
+
     class Renderer {
     public:
         Renderer();
@@ -28,12 +87,14 @@ namespace OZZ {
         // Lifecycle functions
         void Init();
         bool Update();
-        void BeginFrame();
+        std::optional<FrameInfo> BeginFrame();
         VkCommandBuffer RequestCommandBuffer(EyeTarget target);
-        void RenderFrame();
+        void RenderFrame(const FrameInfo& frameInfo);
         void EndFrame();
         void WaitIdle();
         void Cleanup();
+
+        [[nodiscard]] std::optional<std::tuple<EyePoseInfo, EyePoseInfo>> GetEyePoseInfo(int64_t predictedDisplayTime) const;
 
         // Resource functions
         std::unique_ptr<Shader> CreateShader(ShaderConfiguration& config);
@@ -56,7 +117,7 @@ namespace OZZ {
         void createFrameData();
 
         void renderEye(Swapchain* swapchain, const std::vector<std::unique_ptr<SwapchainImage>>& images,
-                                 XrView view, VkDevice device, VkQueue queue, EyeTarget eye);
+                                 VkQueue queue, EyeTarget eye);
 
         bool processXREvents();
 
@@ -65,6 +126,31 @@ namespace OZZ {
                                                             VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                             const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
                                                             void* pUserData);
+
+        [[nodiscard]] static XrPosef getPoseFromEyePose(const EyePoseInfo& eyeInfo) {
+            return {
+                .orientation = {
+                        .x = eyeInfo.Orientation.x,
+                        .y = eyeInfo.Orientation.y,
+                        .z = eyeInfo.Orientation.z,
+                        .w = eyeInfo.Orientation.w,
+                },
+                .position = {
+                        .x = eyeInfo.Position.x,
+                        .y = eyeInfo.Position.y,
+                        .z = eyeInfo.Position.z
+                }
+            };
+        };
+
+        static XrFovf getFovFromEyeFov(const EyePoseInfo& eyeInfo) {
+            return {
+                    .angleLeft = eyeInfo.FOV.AngleLeft,
+                    .angleRight = eyeInfo.FOV.AngleRight,
+                    .angleUp = eyeInfo.FOV.AngleUp,
+                    .angleDown = eyeInfo.FOV.AngleDown,
+            };
+        };
     private:
         // Vulkan Entities
         VkInstance vkInstance{VK_NULL_HANDLE};
@@ -86,7 +172,6 @@ namespace OZZ {
         XrSession xrSession{XR_NULL_HANDLE};
         XrSpace xrApplicationSpace{XR_NULL_HANDLE};
         std::vector<XrViewConfigurationView> viewConfigurationViews;
-        std::vector<XrView> views;
         int64_t swapchainColorFormat{-1};
         std::vector<Swapchain> swapchains;
 

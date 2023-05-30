@@ -51,14 +51,19 @@ void Application::update() {
 }
 
 void Application::renderFrame() {
-    _renderer->BeginFrame();
-    renderEye(OZZ::EyeTarget::Left);
-    renderEye(OZZ::EyeTarget::Right);
-    _renderer->RenderFrame();
+    auto frameInfo = _renderer->BeginFrame();
+    if (!frameInfo.has_value()) {
+        return;
+    }
+
+    auto [leftEyePose, rightEyePose] = _renderer->GetEyePoseInfo(frameInfo->PredictedDisplayTime).value();
+    renderEye(OZZ::EyeTarget::Left, leftEyePose);
+    renderEye(OZZ::EyeTarget::Right, rightEyePose);
+    _renderer->RenderFrame(frameInfo.value());
     _renderer->EndFrame();
 }
 
-void Application::renderEye(OZZ::EyeTarget eye) {
+void Application::renderEye(OZZ::EyeTarget eye, const OZZ::EyePoseInfo& eyePoseInfo) {
     VkCommandBufferInheritanceRenderingInfo renderingInheritance { VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO };
     renderingInheritance.colorAttachmentCount = 1;
     auto swapchainFormat = _renderer->GetSwapchainFormat();
@@ -94,14 +99,12 @@ void Application::renderEye(OZZ::EyeTarget eye) {
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    auto projection = glm::perspectiveRH_ZO(glm::radians(45.0f), (float) width / (float) height, 0.1f, 15.0f);
-    projection[1][1] *= -1;
-
     auto view = glm::lookAt(glm::vec3(0.0f, 0.0f, 10.0f), // Camera is at (0,0,3), in World Space
                             glm::vec3(0.0f, 0.0f, 0.0f), // and looks at the origin
                             glm::vec3(0.0f, 1.0f, 0.0f)  // Head is up (set to 0,-1,0 to look upside-down)
     );
 
+    auto projection = eyePoseInfo.GetProjectionMatrix();
     _cube->Draw(commandBuffer, view, projection);
     _cube2->Draw(commandBuffer, view, projection);
 

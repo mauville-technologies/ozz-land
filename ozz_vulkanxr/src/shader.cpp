@@ -3,12 +3,12 @@
 //
 
 #include <ozz_vulkan/resources/shader.h>
+#include <ozz_vulkan/resources/types.h>
 #include <ozz_vulkan/internal/utils.h>
+#include <ozz_vulkan/internal/vk_utils.h>
 
 #include <utility>
-#include <ozz_vulkan/internal/vk_utils.h>
 #include <spdlog/spdlog.h>
-#include "ozz_vulkan/resources/types.h"
 
 namespace OZZ {
 

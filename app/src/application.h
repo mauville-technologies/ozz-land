@@ -19,7 +19,7 @@ public:
 private:
     void update();
     void renderFrame();
-    void renderEye(OZZ::EyeTarget eye);
+    void renderEye(OZZ::EyeTarget eye, const OZZ::EyePoseInfo& eyePoseInfo);
 
 private:
     std::unique_ptr<OZZ::Renderer> _renderer;
