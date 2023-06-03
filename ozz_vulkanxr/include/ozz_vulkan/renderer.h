@@ -23,6 +23,11 @@
 #include <glm/gtc/quaternion.hpp>
 
 namespace OZZ {
+    struct HeadPoseInfo {
+        glm::quat Orientation;
+        glm::vec3 Position;
+    };
+
     struct FieldOfView {
         float AngleDown;
         float AngleLeft;
@@ -95,6 +100,7 @@ namespace OZZ {
         void Cleanup();
 
         [[nodiscard]] std::optional<std::tuple<EyePoseInfo, EyePoseInfo>> GetEyePoseInfo(int64_t predictedDisplayTime) const;
+        std::optional<HeadPoseInfo> GetHeadPosition(const FrameInfo& frameInfo);
 
         // Resource functions
         std::unique_ptr<Shader> CreateShader(ShaderConfiguration& config);
@@ -171,6 +177,8 @@ namespace OZZ {
         XrSystemId xrSystemId{XR_NULL_SYSTEM_ID};
         XrSession xrSession{XR_NULL_HANDLE};
         XrSpace xrApplicationSpace{XR_NULL_HANDLE};
+        XrSpace xrViewSpace{XR_NULL_HANDLE};
+
         std::vector<XrViewConfigurationView> viewConfigurationViews;
         int64_t swapchainColorFormat{-1};
         std::vector<Swapchain> swapchains;

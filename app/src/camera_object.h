@@ -4,6 +4,7 @@
 #pragma once
 #include <glm/glm.hpp>
 #include "transform_component.h"
+#include "ozz_vulkan/renderer.h"
 
 class CameraObject {
 public:
@@ -19,7 +20,14 @@ public:
     }
 
     [[nodiscard]] glm::mat4 GetViewMatrix() const {
-        return glm::inverse(_transformComponent.GetModelMatrix());
+        // build headpose matrix
+        auto headPoseMatrix = glm::mat4{1.f};
+        headPoseMatrix = glm::translate(headPoseMatrix, _headPose.Position);
+        headPoseMatrix = glm::translate(headPoseMatrix, _transformComponent.GetTranslation());
+        headPoseMatrix *= glm::toMat4(_transformComponent.GetRotation() * _headPose.Orientation);
+
+        // build view matrix
+        return glm::inverse(headPoseMatrix);
     }
 
     [[nodiscard]] glm::vec3 GetPosition() const {
@@ -29,6 +37,11 @@ public:
     [[nodiscard]] glm::quat GetRotation() const {
         return _transformComponent.GetRotation();
     }
+
+    void SetHeadPose(const OZZ::HeadPoseInfo& headPoseInfo) {
+        _headPose = headPoseInfo;
+    }
 private:
     TransformComponent _transformComponent;
+    OZZ::HeadPoseInfo _headPose;
 };

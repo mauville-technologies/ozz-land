@@ -14,7 +14,8 @@ Application::Application() {
 
     // Create the camera
     _cameraObject = std::make_unique<CameraObject>();
-    _cameraObject->Translate(glm::vec3(0.0f, 0.0f, 3.0f));
+    _cameraObject->Translate(glm::vec3(0.0f, 0.0f, 0.0f));
+    _cameraObject->Rotate(glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 
     // Create cube
     _cube = std::make_unique<Cube>(_renderer.get());
@@ -37,8 +38,14 @@ void Application::Run() {
             Stop();
             continue;
         }
-        update();
-        renderFrame();
+        auto frameInfo = _renderer->BeginFrame();
+        if (!frameInfo.has_value()) {
+            spdlog::error("Failed to begin frame, exiting...");
+            continue;
+        }
+
+        update(frameInfo.value());
+        renderFrame(frameInfo.value());
     }
 
     spdlog::info("Application stopped");
@@ -49,28 +56,22 @@ void Application::Stop() {
     spdlog::info("Stopping application");
 }
 
-void Application::update() {
-    auto moveX = std::cos(_frameCount / 100.0f) * 0.1f;
-    auto moveZ = std::sin(_frameCount / 100.0f) * 0.1f;
-
-    _cameraObject->Translate(glm::vec3(moveX, 0, moveZ));
-
+void Application::update(const OZZ::FrameInfo& frameInfo) {
+    auto headInfo = _renderer->GetHeadPosition(frameInfo);
+    if (headInfo.has_value()) {
+        _cameraObject->SetHeadPose(headInfo.value());
+    }
     _cube->Update(0);
     _cube2->Update(0);
 
     _frameCount++;
 }
 
-void Application::renderFrame() {
-    auto frameInfo = _renderer->BeginFrame();
-    if (!frameInfo.has_value()) {
-        return;
-    }
-
-    auto [leftEyePose, rightEyePose] = _renderer->GetEyePoseInfo(frameInfo->PredictedDisplayTime).value();
+void Application::renderFrame(const OZZ::FrameInfo& frameInfo) {
+    auto [leftEyePose, rightEyePose] = _renderer->GetEyePoseInfo(frameInfo.PredictedDisplayTime).value();
     renderEye(OZZ::EyeTarget::Left, leftEyePose);
     renderEye(OZZ::EyeTarget::Right, rightEyePose);
-    _renderer->RenderFrame(frameInfo.value());
+    _renderer->RenderFrame(frameInfo);
     _renderer->EndFrame();
 }
 

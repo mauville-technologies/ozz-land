@@ -52,6 +52,7 @@ namespace OZZ {
         }
 
         if (!frameState.shouldRender) {
+            spdlog::warn("Frame should not be rendered");
             return std::nullopt;
         }
 
@@ -418,6 +419,40 @@ namespace OZZ {
         };
 
         return std::tuple{ leftEyePoseInfo, rightEyePoseInfo };
+    }
+
+    std::optional<HeadPoseInfo> Renderer::GetHeadPosition(const FrameInfo& frameInfo) {
+        // if no view reference space created, create it
+        if (xrViewSpace == XR_NULL_HANDLE) {
+            XrPosef pose{};
+            pose.orientation = {0.0f, 0.0f, 0.0f, 1.0f};
+            pose.position = {0.0f, 0.0f, 0.0f};
+
+            XrReferenceSpaceCreateInfo referenceSpaceCreateInfo{XR_TYPE_REFERENCE_SPACE_CREATE_INFO};
+            referenceSpaceCreateInfo.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
+            referenceSpaceCreateInfo.poseInReferenceSpace = pose;
+
+            auto result = xrCreateReferenceSpace(xrSession, &referenceSpaceCreateInfo, &xrViewSpace);
+            if (result != XR_SUCCESS) {
+                spdlog::error("Failed to create OpenXR View Reference Space {}", result);
+                return std::nullopt;
+            }
+        }
+
+
+        XrSpaceLocation spaceLocation{XR_TYPE_SPACE_LOCATION};
+        auto result = xrLocateSpace(xrViewSpace, xrApplicationSpace, frameInfo.PredictedDisplayTime, &spaceLocation);
+        if (result != XR_SUCCESS) {
+            spdlog::error("Failed to locate OpenXR View Reference Space {}", result);
+            return std::nullopt;
+        }
+
+        HeadPoseInfo headPoseInfo = {
+                .Orientation = glm::quat{spaceLocation.pose.orientation.w, spaceLocation.pose.orientation.x, spaceLocation.pose.orientation.y, spaceLocation.pose.orientation.z},
+                .Position = { spaceLocation.pose.position.z, spaceLocation.pose.position.y, -spaceLocation.pose.position.x }
+        };
+
+        return headPoseInfo;
     }
 
     std::unique_ptr<Shader> Renderer::CreateShader(ShaderConfiguration &config) {
@@ -1020,6 +1055,7 @@ namespace OZZ {
         spdlog::info("Vulkan Debug Message: {}", pCallbackData->pMessage);
         return VK_FALSE;
     }
+
 
 
 }

@@ -18,8 +18,8 @@ public:
     void Stop();
 
 private:
-    void update();
-    void renderFrame();
+    void update(const OZZ::FrameInfo& frameInfo);
+    void renderFrame(const OZZ::FrameInfo& frameInfo);
     void renderEye(OZZ::EyeTarget eye, const OZZ::EyePoseInfo& eyePoseInfo);
 
 private:
